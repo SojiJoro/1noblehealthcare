@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global Base Styling */
+body {
+  /* A light background with default text colour and sans font */
+  @apply bg-gray-50 text-gray-800 font-sans;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  /* Bold headings with a dark text colour */
+  @apply font-bold text-gray-900;
+}
+
+/* Paragraphs */
+p {
+  /* Comfortable line-height and margin for readability */
+  @apply leading-relaxed mb-4;
+}
+
+/* Links */
+a {
+  /* Using a brand colour (adjust as needed) with an underline on hover */
+  @apply text-brandBlue hover:text-brandBlue-dark;
+}
+
+/* Container (to centre your content) */
+.container {
+  @apply mx-auto px-4;
+}
+
+/* Custom Button (example style for calls-to-action) */
+.btn {
+  @apply bg-brandGreen text-white py-2 px-4 rounded transition duration-200 hover:opacity-90;
+}
+
+/* Header Styling */
+header {
+  /* Background using your brand blue and white text */
+  @apply bg-brandBlue text-white py-4 px-6;
+}
+
+/* Footer Styling */
+footer {
+  /* Dark footer background and light text */
+  @apply bg-[#222] text-white py-4 px-6;
+}
+
+/* Utility Class Example: Additional margin-top, if needed */
+.mt-20 {
+  margin-top: 5rem;
+}
+
+/* Add other custom overrides as needed based on your screenshot design */

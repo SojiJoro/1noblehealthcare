@@ -4,8 +4,8 @@ import Header from '../components/Header'
 import Footer from '../components/Footer'
 
 export const metadata = {
-  title: '1noblehealthcare',
-  description: 'Quality healthcare services with compassion and innovation.',
+  title: '1 Noble Healthcare',
+  description: 'Your all-round care provider.',
 }
 
 export default function RootLayout({
@@ -17,9 +17,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Header />
-        <main className="container mx-auto p-6">
-          {children}
-        </main>
+        <main className="container mx-auto p-6">{children}</main>
         <Footer />
       </body>
     </html>
