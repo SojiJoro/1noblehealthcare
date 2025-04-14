@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "tailwind": "node ./node_modules/tailwindcss/dist/cli.js init -p",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
