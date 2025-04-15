@@ -1,64 +1,63 @@
-// src/components/home/ServicesSection.tsx
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import WaveDivider from "./WaveDivider";
 
 export default function ServicesSection() {
+  const services = [
+    {
+      title: "Learning Disability Services",
+      href: "/services/learning-disability",
+      image: "/images/learning-disability.jpg",
+    },
+    {
+      title: "Physical Disability Services",
+      href: "/services/physical-disability",
+      image: "/images/physical-disability.jpg",
+    },
+    {
+      title: "Dementia Residential Services",
+      href: "/services/dementia-residential",
+      image: "/images/dementia-residential.jpg",
+    },
+  ];
+
   return (
-    <section className="relative bg-gray-50 pt-10 pb-12 px-4 lg:px-12">
-      {/* Wave at the top, brandBlue color, reversed by flipping vertically */}
-      <div className="absolute top-0 left-0 right-0 rotate-180">
-        <WaveDivider color="#ffffff" />
-      </div>
+    <section className="services-section" id="services">
+      <div className="services-container">
+        {/* Text column */}
+        <div className="services-text">
+          <h2>Our Services</h2>
+          <p>
+            At <strong>1 Noble Healthcare</strong>, we provide personalised care services that
+            enhance lives and foster independence.
+          </p>
+          <p>
+            Whether in supported living, residential settings or at home, our experienced team
+            ensures compassionate, person-centred support.
+          </p>
+          <Link href="/services" className="services-button">
+            View All Services →
+          </Link>
+        </div>
 
-      <div className="relative pt-20">
-        <h3 className="text-2xl lg:text-3xl font-bold text-center mb-8">
-          Our Key Services
-        </h3>
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Card 1 */}
-          <div className="border p-6 rounded-md shadow-sm hover:shadow-lg transition duration-200 bg-white">
-            <h4 className="text-xl font-semibold mb-2">Staffing Solutions</h4>
-            <p className="text-gray-600">
-              Supplying highly qualified healthcare professionals for hospitals, clinics, and home care.
-            </p>
-            <Link href="/services" className="text-brandBlue font-semibold mt-4 inline-block">
-              Read more
-            </Link>
-          </div>
-
-          {/* Card 2 */}
-          <div className="border p-6 rounded-md shadow-sm hover:shadow-lg transition duration-200 bg-white">
-            <h4 className="text-xl font-semibold mb-2">Supported Living</h4>
-            <p className="text-gray-600">
-              Providing supportive living environments that promote independence and dignity.
-            </p>
-            <Link href="/services" className="text-brandBlue font-semibold mt-4 inline-block">
-              Read more
-            </Link>
-          </div>
-
-          {/* Card 3 */}
-          <div className="border p-6 rounded-md shadow-sm hover:shadow-lg transition duration-200 bg-white">
-            <h4 className="text-xl font-semibold mb-2">Domiciliary Care</h4>
-            <p className="text-gray-600">
-              Delivering essential care services directly to your home for convenience and peace of mind.
-            </p>
-            <Link href="/services" className="text-brandBlue font-semibold mt-4 inline-block">
-              Read more
-            </Link>
-          </div>
-
-          {/* Card 4 */}
-          <div className="border p-6 rounded-md shadow-sm hover:shadow-lg transition duration-200 bg-white">
-            <h4 className="text-xl font-semibold mb-2">Pediatric & Adolescent Care</h4>
-            <p className="text-gray-600">
-              Specialized care for infants, children, and young adults, ensuring comprehensive support.
-            </p>
-            <Link href="/services" className="text-brandBlue font-semibold mt-4 inline-block">
-              Read more
-            </Link>
+        {/* Image grid */}
+        <div className="services-grid-wrapper">
+          <div className="services-grid">
+            {services.map((service, index) => (
+              <Link key={index} href={service.href} className="service-card">
+                <div className="service-img-container">
+                  <Image
+                    src={service.image}
+                    alt={service.title}
+                    width={400}
+                    height={250}
+                    className="service-img"
+                  />
+                </div>
+                <div className="service-title">{service.title}</div>
+              </Link>
+            ))}
           </div>
         </div>
       </div>

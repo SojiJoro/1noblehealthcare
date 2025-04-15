@@ -1,16 +1,67 @@
-// src/components/home/TestimonialSection.tsx
 "use client";
 
+import Image from "next/image";
+import { useEffect, useState } from "react";
+
 export default function TestimonialSection() {
+  const testimonials = [
+    {
+      name: "Jane Doe",
+      role: "Caregiver",
+      quote: "1 Noble Healthcare has been a game-changer. The support and professionalism I received were outstanding!",
+      image: "/images/testimonial1.jpg",
+    },
+    {
+      name: "John Smith",
+      role: "Client Family Member",
+      quote: "The care my mother received was nothing short of exceptional. I recommend them wholeheartedly.",
+      image: "/images/testimonial2.jpg",
+    },
+    {
+      name: "Nina Okoro",
+      role: "Nurse",
+      quote: "They value their staff and clients equally. Working with 1 Noble Healthcare has been fulfilling.",
+      image: "/images/testimonial3.jpg",
+    },
+  ];
+
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % testimonials.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const active = testimonials[current];
+
   return (
-    <section className="py-12 px-4 bg-brandOrange bg-opacity-10 text-center">
-      <h3 className="text-2xl lg:text-3xl font-bold mb-6">What Our Customers Say</h3>
-      <div className="max-w-4xl mx-auto">
-        <p className="text-lg italic text-gray-700">
-          &quot;1 Noble Healthcare has transformed our lives with their attentive,
-          professional, and compassionate care.&quot;
-        </p>
-        <p className="mt-4 text-gray-500">– A Grateful Family</p>
+    <section className="testimonial-section" id="testimonials">
+      <h3 className="testimonial-heading">What Our Clients Say</h3>
+
+      <div className="testimonial-container">
+        <div className="testimonial-card" data-aos="fade-up">
+          <div className="testimonial-img-wrapper">
+            <Image src={active.image} alt={active.name} fill className="testimonial-img" />
+          </div>
+          <blockquote className="testimonial-quote">“{active.quote}”</blockquote>
+          <div className="testimonial-author">
+            <p className="testimonial-name">{active.name}</p>
+            <p className="testimonial-role">{active.role}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="testimonial-dots">
+        {testimonials.map((_, index) => (
+          <button
+            key={index}
+            className={`testimonial-dot ${index === current ? "active" : ""}`}
+            onClick={() => setCurrent(index)}
+            aria-label={`Testimonial ${index + 1}`}
+          />
+        ))}
       </div>
     </section>
   );
