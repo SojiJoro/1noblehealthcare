@@ -17,10 +17,10 @@ export default function CareersPage() {
     },
     {
       id: 2,
-      title: "Community Outreach Officer",
-      location: "Poole",
+      title: "HCA",
+      location: "Bournemouth",
       description:
-        "Engage with local partners and families to deliver high-quality community-based support programmes.",
+        "Provide daily support for adults with autism in a residential setting. Foster independence and wellbeing.",
     },
     {
       id: 3,
