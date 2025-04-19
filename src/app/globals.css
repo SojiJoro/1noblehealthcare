@@ -688,3 +688,37 @@ body {
     border: 1px solid #000 !important;
   }
 }
+/* Removed invalid <meta> tag from CSS file */
+/* Mobile-first media queries */
+@media (min-width: 640px) {
+  /* Small devices */
+}
+
+@media (min-width: 768px) {
+  /* Medium devices */
+}
+
+@media (min-width: 1024px) {
+  /* Large devices */
+}
+.hero-content h1 {
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
+}
+
+.hero-content h2 {
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
+}
+
+.hero-content p {
+  font-size: clamp(1rem, 3vw, 1.125rem);
+}
+@media (max-width: 640px) {
+  .timesheet-section {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+img {
+  max-width: 100%;
+  height: auto;
+}
