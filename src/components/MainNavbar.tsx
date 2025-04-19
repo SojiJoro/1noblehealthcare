@@ -1,15 +1,15 @@
+// src/components/MainNavbar.tsx
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function Navbar() {
+export default function MainNavbar() {
   const pathname = usePathname();
 
   const tabs = [
     { name: "Home", href: "/" },
-    { name: "About Us", href: "/about" },
+    { name: "About Us", href: "/about" },
     { name: "Careers", href: "/careers" },
     { name: "Contact", href: "/contact-us" },
   ];
@@ -21,14 +21,13 @@ export default function Navbar() {
     >
       <div className="container mx-auto px-4 py-2 flex items-center justify-between">
         {/* Logo Section */}
-        <Link href="/" className="flex items-center">
-          <Image
+        <Link href="/" className="flex items-center no-underline">
+          <img
             src="/images/logo.png"
             alt="1 Noble Healthcare Logo"
             width={100}
             height={60}
             className="mr-3"
-            priority
           />
         </Link>
 
@@ -40,11 +39,13 @@ export default function Navbar() {
               <Link
                 key={tab.name}
                 href={tab.href}
-                className={`px-3 py-1 border-b-2 transition-colors duration-300 ${
-                  isActive
-                    ? "text-blue-600 border-blue-500"
-                    : "text-[#257264] border-transparent hover:border-gray-400"
-                }`}
+                className={`
+                  no-underline
+                  px-3 py-1 font-medium transition-colors duration-300
+                  ${isActive
+                    ? "text-blue-600"
+                    : "text-[#257264] hover:text-gray-700 hover:no-underline"}
+                `}
               >
                 {tab.name}
               </Link>

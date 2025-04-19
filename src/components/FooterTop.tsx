@@ -30,6 +30,7 @@ export default function FooterTop(): JSX.Element {
               <li><Link href="/about" className="text-white">About Us</Link></li>
               <li><Link href="/services" className="text-white">Our Services</Link></li>
               <li><Link href="/careers" className="text-white">Careers</Link></li>
+              <li><Link href="/timesheet" className="text-white">Timesheet</Link></li>
               <li><Link href="/contact-us" className="text-white">Contact Us</Link></li>
             </ul>
           </div>

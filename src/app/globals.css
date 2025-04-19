@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/* …the rest of your CSS… */
+
 /* === BRAND COLOURS === */
 :root {
   --brand-blue: #20bfa0;
@@ -33,7 +35,6 @@ body {
   flex-direction: column;
   min-height: 100vh;
 }
-
 .content {
   flex: 1;
 }
@@ -41,7 +42,8 @@ body {
 /* === HERO SECTION === */
 .hero {
   position: relative;
-  height: 100vh;
+  /* no longer full‑screen height so users see next section sooner */
+  min-height: 60vh;
   width: 100%;
   background: url("/images/hero-background.jpg") no-repeat center center / cover;
   display: flex;
@@ -54,6 +56,8 @@ body {
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 0;
+  /* let pointer events through so scrolling isn’t blocked */
+  pointer-events: none;
 }
 
 .hero-content {
@@ -100,7 +104,7 @@ body {
 }
 .about-text h2 {
   font-size: 2rem;
-  color: #20bfa0;
+  color: var(--brand-blue);
   font-weight: bold;
   margin-bottom: 1rem;
 }
@@ -122,7 +126,6 @@ body {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   object-fit: cover;
 }
-
 @media (min-width: 992px) {
   .about-container {
     flex-direction: row;
@@ -149,7 +152,7 @@ body {
 }
 .services-text h2 {
   font-size: 2rem;
-  color: #20bfa0;
+  color: var(--brand-blue);
   font-weight: bold;
   margin-bottom: 1rem;
 }
@@ -161,7 +164,7 @@ body {
 .services-button {
   display: inline-block;
   padding: 0.6rem 1.2rem;
-  background-color: #20bfa0;
+  background-color: var(--brand-blue);
   color: white;
   border-radius: 4px;
   font-weight: 600;
@@ -171,8 +174,6 @@ body {
 .services-button:hover {
   background-color: #163b6e;
 }
-
-/* Grid for services */
 .services-grid-wrapper {
   max-width: 960px;
   margin: 0 auto;
@@ -218,7 +219,7 @@ body {
   font-size: 1rem;
   font-weight: 600;
   text-align: center;
-  color: #20bfa0;;
+  color: var(--brand-blue);
 }
 
 /* === WHY CHOOSE US SECTION === */
@@ -230,7 +231,7 @@ body {
 .why-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #20bfa0;;
+  color: var(--brand-blue);
   margin-bottom: 3rem;
 }
 @media (min-width: 1024px) {
@@ -273,7 +274,7 @@ body {
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: #20bfa0;;
+  color: var(--brand-blue);
 }
 .why-card-desc {
   font-size: 0.95rem;
@@ -289,7 +290,7 @@ body {
 .testimonial-heading {
   font-size: 2rem;
   font-weight: 800;
-  color: #20bfa0;
+  color: var(--brand-blue);
   margin-bottom: 3rem;
 }
 @media (min-width: 1024px) {
@@ -315,7 +316,7 @@ body {
   margin: 0 auto 1.5rem;
   border-radius: 50%;
   overflow: hidden;
-  border: 4px solid #20bfa0;
+  border: 4px solid var(--brand-blue);
 }
 .testimonial-img {
   object-fit: cover;
@@ -330,7 +331,7 @@ body {
   margin-top: 1rem;
 }
 .testimonial-name {
-  color: #20bfa0;
+  color: var(--brand-blue);
   font-weight: 600;
   font-size: 1.125rem;
 }
@@ -355,7 +356,7 @@ body {
   background-color: #9ca3af;
 }
 .testimonial-dot.active {
-  background-color: #20bfa0;
+  background-color: var(--brand-blue);
   transform: scale(1.25);
 }
 
@@ -427,7 +428,7 @@ body {
 
 /* === FOOTER TOP === */
 .footer-top {
-  background-color: #20bfa0;
+  background-color: var(--brand-blue);
   color: #ffffff;
   padding: 60px 0;
   box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.05);
@@ -441,7 +442,7 @@ body {
 
 /* === FOOTER BOTTOM === */
 .footer-bottom {
-  background-color: #20bfa0;
+  background-color: var(--brand-blue);
   color: #ffffff;
   padding: 16px 0;
   text-align: center;
@@ -478,94 +479,7 @@ body {
   }
 }
 
-/* --- NAVBAR STYLING --- */
-#mainNav {
-  background-color: #ffffff;
-  padding: 0.75rem 1.25rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
 
-#mainNav a {
-  color: var(--gray-900) !important;
-  font-weight: bold;
-  transition: color 0.3s ease-in-out;
-}
-
-#mainNav a:hover {
-  color: var(--brand-blue) !important;
-}
-
-#mainNav .dropdown-menu {
-  background-color: #ffffff;
-  border: 1px solid #ddd;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-#mainNav .dropdown-item {
-  color: var(--gray-800) !important;
-  font-weight: 500;
-  transition: background 0.3s ease-in-out;
-}
-
-#mainNav .dropdown-item:hover {
-  background-color: #f0f0f0;
-  color: var(--brand-blue) !important;
-}
-
-
-/* === MISSION SECTION === */
-.mission-section {
-  min-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding-top: 150px;
-}
-@media (max-width: 768px) {
-  .mission-section {
-    padding-top: 100px;
-  }
-}
-
-/* === CARD COMPONENTS === */
-.card {
-  border: none;
-  transition: transform 0.3s ease-in-out;
-}
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
-}
-.card i {
-  font-size: 2.5rem;
-}
-
-/* === LOGO CONTAINER === */
-.logo-container {
-  background-color: #ffffff;
-  padding: 10px;
-  border-radius: 8px;
-  display: inline-block;
-}
-
-/* === PARAGRAPH TEXT === */
-p {
-  margin-bottom: 1rem;
-  color: var(--gray-800);
-}
-
-/* === RESPONSIVE HERO === */
-@media (max-width: 768px) {
-  .hero h1 {
-    font-size: 2.2rem;
-  }
-  .hero .btn {
-    font-size: 1rem;
-    padding: 10px 20px;
-  }
-}
 
 /* === STAFFING PAGE === */
 .staffing-wrapper {
@@ -574,12 +488,10 @@ p {
   gap: 2.5rem;
   padding: 4rem 1rem;
 }
-
 .staffing-content,
 .staffing-image {
   width: 100%;
 }
-
 .staffing-heading {
   font-size: 2.25rem;
   font-weight: 700;
@@ -587,21 +499,18 @@ p {
   margin-bottom: 1.5rem;
   line-height: 1.3;
 }
-
 .staffing-description {
   font-size: 1rem;
   line-height: 1.7;
   color: #4a4a4a;
   margin-bottom: 1.5rem;
 }
-
 .staffing-features {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
   margin-bottom: 2rem;
 }
-
 .staffing-feature {
   display: flex;
   align-items: flex-start;
@@ -609,17 +518,15 @@ p {
   color: #222;
   font-size: 1rem;
 }
-
 .staffing-feature svg {
-  color: #20bfa0;
+  color: var(--brand-blue);
   min-width: 20px;
   height: 20px;
   margin-top: 2px;
 }
-
 .staffing-cta {
   display: inline-block;
-  background-color: #20bfa0;
+  background-color: var(--brand-blue);
   color: #fff;
   padding: 0.75rem 1.5rem;
   font-weight: 600;
@@ -627,16 +534,13 @@ p {
   text-decoration: none;
   transition: background 0.3s;
 }
-
 .staffing-cta:hover {
   background-color: #66aa1b;
 }
-
-/* Updated image container for square fit */
 .staffing-image-box {
   width: 100%;
   max-width: 400px;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 1/1;
   background-color: #f4f4f4;
   border-radius: 12px;
   overflow: hidden;
@@ -645,8 +549,6 @@ p {
   justify-content: center;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
 }
-
-/* Layout for desktop */
 @media (min-width: 1024px) {
   .staffing-wrapper {
     flex-direction: row;
@@ -654,13 +556,135 @@ p {
     justify-content: space-between;
     padding: 6rem 4rem;
   }
-
   .staffing-content,
   .staffing-image {
     width: 48%;
   }
-
   .staffing-heading {
     font-size: 2.5rem;
+  }
+}
+
+/* === TIMESHEET SECTION === */
+.timesheet-section {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font-family: Arial, sans-serif;
+}
+.timesheet-section .ts-header-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.5rem;
+}
+.timesheet-section .ts-header-table th,
+.timesheet-section .ts-header-table td {
+  border: 1px solid #888;
+  padding: 0.25rem;
+  font-size: 0.875rem;
+}
+.timesheet-section .ts-header-table input {
+  width: 100%;
+  border: none;
+  padding: 0.25rem;
+  font-size: 0.875rem;
+}
+.timesheet-section .ts-title-row {
+  background: #d8e7f3;
+  text-align: center;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+.timesheet-section .ts-title-row th {
+  border: 1px solid #888;
+  padding: 0.5rem;
+}
+.timesheet-section table.ts-main {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.5rem;
+}
+.timesheet-section table.ts-main th,
+.timesheet-section table.ts-main td {
+  border: 1px solid #888;
+  padding: 0.35rem;
+  font-size: 0.85rem;
+}
+.timesheet-section table.ts-main th {
+  background: #f0f4f8;
+  text-align: center;
+}
+.timesheet-section table.ts-main td input {
+  width: 100%;
+  border: none;
+  padding: 0.25rem;
+  font-size: 0.85rem;
+}
+.timesheet-section .ts-footer-row {
+  font-weight: bold;
+  text-align: right;
+  padding-top: 0.25rem;
+}
+.timesheet-section .ts-sign-block {
+  display: grid;
+  grid-template-columns: 2fr 3fr 2fr;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+.timesheet-section .ts-sign-block .label {
+  font-weight: bold;
+  padding: 0.25rem;
+  border: 1px solid #888;
+}
+.timesheet-section .ts-sign-block .value {
+  border: 1px solid #888;
+  padding: 0.25rem;
+}
+.timesheet-section .ts-sign-block .sig-canvas {
+  grid-column: span 3;
+  height: 120px;
+  border: 1px solid #888;
+}
+.timesheet-actions {
+  position: sticky;
+  bottom: 0;
+  background: inherit;
+  padding: 0.5rem 0;
+}
+/* 2. Responsive table on mobile */
+@media (max-width: 640px) {
+  .timesheet-table thead {
+    display: none;
+  }
+  .timesheet-table tr {
+    display: block;
+    margin-bottom: 1rem;
+  }
+  .timesheet-table td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+  }
+  .timesheet-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+  }
+}
+/* 6. Print‐only adjustments */
+@media print {
+  .timesheet-section {
+    box-shadow: none;
+    border: none;
+    margin: 0;
+  }
+  input, button, .dark-mode-toggle, .timesheet-actions, .fixed {
+    display: none !important;
+  }
+  .timesheet-table td, .timesheet-table th {
+    border: 1px solid #000 !important;
   }
 }
