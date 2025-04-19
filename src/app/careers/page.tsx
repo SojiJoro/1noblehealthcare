@@ -76,7 +76,7 @@ export default function CareersPage() {
                     Location: {vacancy.location}
                   </h6>
                   <p className="card-text">{vacancy.description}</p>
-                  <a href="#" className="btn btn-primary">
+                  <a href="/careers/apply" className="btn btn-primary">
                     Apply Now
                   </a>
                 </div>
