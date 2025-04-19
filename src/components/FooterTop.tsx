@@ -27,21 +27,24 @@ export default function FooterTop(): JSX.Element {
             <h5 className="fw-bold mb-3 text-accent-yellow">Quick Links</h5>
             <ul className="list-unstyled">
               <li><Link href="/" className="text-white">Home</Link></li>
-              <li><Link href="/who-we-are" className="text-white">Who We Are</Link></li>
-              <li><Link href="/what-we-do" className="text-white">What We Do</Link></li>
-              <li><Link href="/how-you-can-help" className="text-white">How You Can Help</Link></li>
+              <li><Link href="/about" className="text-white">About Us</Link></li>
+              <li><Link href="/services" className="text-white">Our Services</Link></li>
               <li><Link href="/careers" className="text-white">Careers</Link></li>
               <li><Link href="/contact-us" className="text-white">Contact Us</Link></li>
             </ul>
           </div>
 
-          {/* What We Do */}
+          {/* Our Services */}
           <div className="col-md-3">
-            <h5 className="fw-bold mb-3 text-accent-yellow">What We Do</h5>
+            <h5 className="fw-bold mb-3 text-accent-yellow">Services</h5>
             <ul className="list-unstyled">
-              <li><Link href="/services/adult-social-care" className="text-white">Adult Social Care</Link></li>
+              <li><Link href="/services/learning-disability" className="text-white">Learning Disability</Link></li>
+              <li><Link href="/services/physical-disability" className="text-white">Physical Disability</Link></li>
+              <li><Link href="/services/dementia-residential" className="text-white">Dementia Residential</Link></li>
               <li><Link href="/services/supported-living" className="text-white">Supported Living</Link></li>
-              <li><Link href="/services/educational-vocational-support" className="text-white">Educational & Vocational Support</Link></li>
+              <li><Link href="/services/domiciliary" className="text-white">Domiciliary Care</Link></li>
+              <li><Link href="/services/staffing" className="text-white">Staffing Solutions</Link></li>
+              <li><Link href="/services/young-adults" className="text-white">Young Adults Support</Link></li>
             </ul>
           </div>
 

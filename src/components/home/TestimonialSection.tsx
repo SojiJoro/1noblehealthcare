@@ -6,24 +6,25 @@ import { useEffect, useState } from "react";
 export default function TestimonialSection() {
   const testimonials = [
     {
-      name: "Jane Doe",
-      role: "Caregiver",
-      quote: "1 Noble Healthcare has been a game-changer. The support and professionalism I received were outstanding!",
+      name: "Angela Thompson",
+      role: "Support Worker",
+      quote: "Joining 1 Noble Healthcare changed my perspective on care work. I feel truly valued and supported every day.",
       image: "/images/testimonial1.jpg",
     },
     {
-      name: "John Smith",
-      role: "Client Family Member",
-      quote: "The care my mother received was nothing short of exceptional. I recommend them wholeheartedly.",
+      name: "David Akinwale",
+      role: "Son of a Service User",
+      quote: "The difference in my dad's wellbeing since we found 1 Noble is incredible. Their team treats him like family.",
       image: "/images/testimonial2.jpg",
     },
     {
-      name: "Nina Okoro",
-      role: "Nurse",
-      quote: "They value their staff and clients equally. Working with 1 Noble Healthcare has been fulfilling.",
+      name: "Chinelo Eze",
+      role: "Registered Nurse",
+      quote: "It's not just a job here – it's a place where people genuinely care about the lives they touch. I'm proud to be part of the team.",
       image: "/images/testimonial3.jpg",
     },
   ];
+  
 
   const [current, setCurrent] = useState(0);
 

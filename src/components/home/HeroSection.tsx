@@ -10,12 +10,12 @@ export default function HeroSection() {
         <h1>Professional & Person-Centered Care</h1>
         <h2>We are your trusted partner in social care, delivering high-quality support.</h2>
         <Link
-          href="/who-we-are/mission"
+          href="/about" // Updated to lead to the About page
           className="btn btn-primary btn-lg"
           style={{
             backgroundColor: "#20bfa0",
             borderColor: "#164B68",
-            color: "#fff"
+            color: "#fff",
           }}
         >
           Learn More

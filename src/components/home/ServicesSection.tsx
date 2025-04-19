@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 export default function ServicesSection() {
-  const services = [
+  const allServices = [
     {
       title: "Learning Disability Services",
       href: "/services/learning-disability",
@@ -20,12 +20,34 @@ export default function ServicesSection() {
       href: "/services/dementia-residential",
       image: "/images/dementia-residential.jpg",
     },
+    {
+      title: "Supported Living",
+      href: "/services/supported-living",
+      image: "/images/supported-living.jpg",
+    },
+    {
+      title: "Domiciliary Care",
+      href: "/services/domiciliary",
+      image: "/images/domiciliary.jpg",
+    },
+    {
+      title: "Staffing Solutions",
+      href: "/services/staffing",
+      image: "/images/staffing.jpg",
+    },
+    {
+      title: "Young Adults Support",
+      href: "/services/young-adults",
+      image: "/images/young-adults.jpg",
+    },
   ];
+
+  const homepageServices = allServices.slice(0, 3); // Only show first 3
 
   return (
     <section className="services-section" id="services">
       <div className="services-container">
-        {/* Text column */}
+        {/* Text section */}
         <div className="services-text">
           <h2>Our Services</h2>
           <p>
@@ -41,10 +63,10 @@ export default function ServicesSection() {
           </Link>
         </div>
 
-        {/* Image grid */}
+        {/* Image grid for homepage preview */}
         <div className="services-grid-wrapper">
           <div className="services-grid">
-            {services.map((service, index) => (
+            {homepageServices.map((service, index) => (
               <Link key={index} href={service.href} className="service-card">
                 <div className="service-img-container">
                   <Image

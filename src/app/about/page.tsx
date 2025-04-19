@@ -1,4 +1,3 @@
-// src/app/about/page.tsx
 "use client";
 
 import Image from "next/image";
@@ -37,12 +36,14 @@ export default function AboutPage() {
 
           {/* Image Section */}
           <div className="lg:w-1/2 flex justify-center">
-            <div className="relative w-full max-w-md h-[300px] lg:h-[400px] rounded-lg shadow-lg overflow-hidden">
+            <div className="staffing-image-box">
               <Image
-                src="/images/about-us.jpg" // Replace with an actual image
+                src="/images/about-us.jpg"
                 alt="About 1 Noble Healthcare"
-                fill
-                className="object-cover"
+                width={400}
+                height={400}
+                className="w-full h-full object-contain rounded-lg"
+                priority
               />
             </div>
           </div>

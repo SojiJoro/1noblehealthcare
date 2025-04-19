@@ -17,7 +17,7 @@ export default function ContactCtaSection() {
           <Link href="/careers" className="contact-cta-btn join">
             Join Our Team
           </Link>
-          <Link href="/contact" className="contact-cta-btn request">
+          <Link href="/contact-us" className="contact-cta-btn request">
             Request Staff
           </Link>
         </div>

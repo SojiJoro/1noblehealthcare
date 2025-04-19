@@ -1,47 +1,78 @@
-// src/app/services/page.tsx
 "use client";
 
-export default function ServicesPage() {
+import Image from "next/image";
+import Link from "next/link";
+
+export default function AllServicesPage() {
   const services = [
     {
-      title: "Staffing Solutions",
-      desc: "Supplying healthcare professionals to hospitals, clinics, and homes.",
+      title: "Learning Disability Services",
+      href: "/services/learning-disability",
+      image: "/images/learning-disability.jpg",
+    },
+    {
+      title: "Physical Disability Services",
+      href: "/services/physical-disability",
+      image: "/images/physical-disability.jpg",
+    },
+    {
+      title: "Dementia Residential Services",
+      href: "/services/dementia-residential",
+      image: "/images/dementia-residential.jpg",
     },
     {
       title: "Supported Living",
-      desc: "Promoting independence and dignity through tailored support.",
+      href: "/services/supported-living",
+      image: "/images/supported-living.jpg",
     },
     {
       title: "Domiciliary Care",
-      desc: "Personalised care services delivered to your home.",
+      href: "/services/domiciliary",
+      image: "/images/domiciliary.jpg",
     },
     {
-      title: "Pediatric & Adolescent Care",
-      desc: "Specialised care for children and young people.",
+      title: "Staffing Solutions",
+      href: "/services/staffing",
+      image: "/images/staffing.jpg",
+    },
+    {
+      title: "Young Adults Support",
+      href: "/services/young-adults",
+      image: "/images/young-adults.jpg",
     },
   ];
 
   return (
-    <section className="py-16 px-6 lg:px-12 bg-gray-50">
-      <div className="container mx-auto max-w-7xl">
-        {/* Header */}
-        <h1 className="text-4xl lg:text-5xl font-extrabold text-brandBlue text-center mb-12">
-          Our Services
-        </h1>
+    <section className="services-section" id="all-services">
+      <div className="services-container">
+        {/* Header section */}
+        <div className="services-text">
+          <h2>All Our Services</h2>
+          <p>
+            Discover the full range of care services we offer. Each one is designed
+            to meet the unique needs of the individuals and families we support —
+            always with compassion, dignity, and a person-centred approach.
+          </p>
+        </div>
 
-        {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
-          {services.map((service, idx) => (
-            <div
-              key={idx}
-              className="bg-white p-8 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                {service.title}
-              </h2>
-              <p className="text-gray-600">{service.desc}</p>
-            </div>
-          ))}
+        {/* Full services grid */}
+        <div className="services-grid-wrapper">
+          <div className="services-grid">
+            {services.map((service, index) => (
+              <Link key={index} href={service.href} className="service-card">
+                <div className="service-img-container">
+                  <Image
+                    src={service.image}
+                    alt={service.title}
+                    width={400}
+                    height={250}
+                    className="service-img"
+                  />
+                </div>
+                <div className="service-title">{service.title}</div>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </section>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function JobApplicationForm() {
   const [formData, setFormData] = useState({
@@ -9,6 +10,10 @@ export default function JobApplicationForm() {
     cv: null,
     message: "",
   });
+
+  const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const handleChange = (e: any) => {
     const { name, value, files } = e.target;
@@ -20,6 +25,8 @@ export default function JobApplicationForm() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+    setStatus("");
+    setIsSubmitting(true);
 
     const body = new FormData();
     body.append("name", formData.name);
@@ -27,13 +34,25 @@ export default function JobApplicationForm() {
     body.append("message", formData.message);
     if (formData.cv) body.append("cv", formData.cv);
 
-    const res = await fetch("/api/apply", {
-      method: "POST",
-      body,
-    });
+    try {
+      const res = await fetch("/api/apply", {
+        method: "POST",
+        body,
+      });
 
-    const data = await res.json();
-    alert(data.message);
+      const data = await res.json();
+
+      if (res.ok) {
+        setStatus("Application submitted successfully!");
+        router.push("/thank-you");
+      } else {
+        setStatus(`Error: ${data.message}`);
+      }
+    } catch (err) {
+      setStatus("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -80,10 +99,15 @@ export default function JobApplicationForm() {
             required
           />
         </div>
-        <button type="submit" className="btn btn-success">
-          Submit Application
+        <button type="submit" className="btn btn-success" disabled={isSubmitting}>
+          {isSubmitting ? "Submitting..." : "Submit Application"}
         </button>
       </form>
+      {status && (
+        <div className={`alert mt-3 ${status.startsWith("Error") ? "alert-danger" : "alert-info"}`}>
+          {status}
+        </div>
+      )}
     </div>
   );
 }
