@@ -157,7 +157,6 @@ export default function TimesheetPage() {
           <h2 className="text-2xl font-bold text-[#20bfa0]">
   Weekly Timesheet
 </h2>
-
             <button
               onClick={() => setDarkMode((d) => !d)}
               className="dark-mode-toggle px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded"
@@ -257,7 +256,7 @@ export default function TimesheetPage() {
                       </td>
                       <td data-label="Time In" className="p-2 border">
                         <input
-                          {...register(`timesheet.${i}.timeIn` as any, { required: true })}
+                         {...register(`timesheet.${i}.timeIn` as any)}
                           placeholder="HH:MM"
                           className="w-full px-1 py-1 border rounded bg-white dark:bg-gray-800"
                         />
