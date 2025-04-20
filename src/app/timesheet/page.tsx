@@ -1,9 +1,14 @@
 // src/app/timesheet/page.tsx
 "use client"
 
+import dynamic from "next/dynamic"
 import React, { useState, useRef, useEffect } from "react"
-import SignaturePad from "react-signature-canvas"
 import { format, addDays } from "date-fns"
+
+// Load SignaturePad only in the browser
+const SignaturePad = dynamic(() => import("react-signature-canvas"), {
+  ssr: false,
+}) as any
 
 const daysOfWeek = [
   "Monday",
@@ -53,11 +58,11 @@ export default function TimesheetPage() {
   })
 
   const [message, setMessage] = useState<string | null>(null)
-  const sigPad = useRef<any>(null)
+  const sigPadRef = useRef<any>(null)
   const [sigError, setSigError] = useState(false)
   const [isSigned, setIsSigned] = useState(false)
 
-  // Auto‑fill dates & weekEnd when weekStart changes
+  // Auto‑fill dates & weekEnd
   useEffect(() => {
     if (!form.weekStart) return
     const start = new Date(form.weekStart)
@@ -71,7 +76,7 @@ export default function TimesheetPage() {
     }))
   }, [form.weekStart])
 
-  // Compute minutes worked in a row
+  // Calculate minutes per row
   const computeRowMins = (r: Row) => {
     if (!r.timeIn || !r.timeOut) return 0
     const [h1, m1] = r.timeIn.split(":").map(Number)
@@ -82,15 +87,18 @@ export default function TimesheetPage() {
   }
 
   // Grand totals
-  const totalMins = form.timesheet.reduce((sum, r) => sum + computeRowMins(r), 0)
+  const totalMins = form.timesheet.reduce(
+    (sum, r) => sum + computeRowMins(r),
+    0
+  )
   const totalH = Math.floor(totalMins / 60)
   const totalR = totalMins % 60
 
   // Handle input change
-  const handleChange = (
+  function handleChange(
     e: React.ChangeEvent<HTMLInputElement>,
     idx?: number
-  ) => {
+  ) {
     const { name, value } = e.target
     if (typeof idx === "number") {
       setForm((f) => {
@@ -104,16 +112,15 @@ export default function TimesheetPage() {
   }
 
   // Clear signature
-  const clearSig = () => {
-    sigPad.current?.clear()
+  function clearSig() {
+    sigPadRef.current?.clear()
     setSigError(false)
     setIsSigned(false)
   }
 
-  // Submit handler: calls /api/timesheet
-  const submit = async () => {
-    console.log("↗️ submit() start, isSigned=", isSigned)
-    if (!isSigned || sigPad.current?.isEmpty()) {
+  // Submit handler
+  async function submit() {
+    if (!isSigned || sigPadRef.current?.isEmpty()) {
       setSigError(true)
       setMessage("Please sign before sending")
       return
@@ -121,7 +128,15 @@ export default function TimesheetPage() {
     setSigError(false)
     setMessage("Sending…")
 
-    const canvas = sigPad.current.getTrimmedCanvas()
+    if (
+      !sigPadRef.current ||
+      typeof sigPadRef.current.getTrimmedCanvas !== "function"
+    ) {
+      setMessage("Signature pad not ready")
+      return
+    }
+
+    const canvas = sigPadRef.current.getTrimmedCanvas()
     if (!canvas) {
       setMessage("Unexpected signature error")
       return
@@ -131,7 +146,6 @@ export default function TimesheetPage() {
       ...form,
       signature: canvas.toDataURL("image/png"),
     }
-    console.log("📨 payload:", payload)
 
     try {
       const res = await fetch("/api/timesheet", {
@@ -139,16 +153,11 @@ export default function TimesheetPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
-      console.log("⬅️ status:", res.status)
 
       const data = await res.json().catch(() => ({}))
-      console.log("⬅️ json:", data)
-
       if (!res.ok) throw new Error(data.message || res.statusText)
 
       setMessage("Sent successfully")
-      console.log("✅ submit() complete")
-
       // Reset form
       setForm({
         clientName: "",
@@ -169,7 +178,6 @@ export default function TimesheetPage() {
       })
       clearSig()
     } catch (err: any) {
-      console.error("❌ submit error:", err)
       setMessage("Send failed: " + err.message)
     }
   }
@@ -177,6 +185,7 @@ export default function TimesheetPage() {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Weekly Timesheet</h1>
+
       {message && (
         <div
           className={`p-2 mb-4 rounded ${
@@ -189,7 +198,7 @@ export default function TimesheetPage() {
         </div>
       )}
 
-      {/* Client & Week Details */}
+      {/* Client & Week */}
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         <div>
           <h2 className="font-semibold mb-2">Client Details</h2>
@@ -201,14 +210,16 @@ export default function TimesheetPage() {
             { name: "email", label: "Email", type: "email" },
           ].map(({ name, label, type }) => (
             <div key={name} className="mb-2">
-              <label htmlFor={name} className="block mb-1">{label}</label>
+              <label htmlFor={name} className="block mb-1">
+                {label}
+              </label>
               <input
                 id={name}
                 name={name}
                 type={type}
                 autoComplete="off"
                 value={(form as any)[name]}
-                onChange={handleChange}
+                onChange={(e) => handleChange(e)}
                 className="w-full border p-2 rounded"
               />
             </div>
@@ -218,18 +229,22 @@ export default function TimesheetPage() {
         <div>
           <h2 className="font-semibold mb-2">Week Details</h2>
           <div className="mb-2">
-            <label htmlFor="weekStart" className="block mb-1">Week Start</label>
+            <label htmlFor="weekStart" className="block mb-1">
+              Week Start
+            </label>
             <input
               id="weekStart"
               name="weekStart"
               type="date"
               value={form.weekStart}
-              onChange={handleChange}
+              onChange={(e) => handleChange(e)}
               className="w-full border p-2 rounded"
             />
           </div>
           <div>
-            <label htmlFor="weekEnd" className="block mb-1">Week End</label>
+            <label htmlFor="weekEnd" className="block mb-1">
+              Week End
+            </label>
             <input
               id="weekEnd"
               name="weekEnd"
@@ -242,14 +257,18 @@ export default function TimesheetPage() {
         </div>
       </div>
 
-      {/* Timesheet Table */}
+      {/* Table */}
       <div className="overflow-x-auto mb-6">
         <table className="w-full table-auto border-collapse text-sm">
           <thead>
             <tr>
-              {["Day", "Date", "In", "Out", "Break", "Total", "Notes"].map((h) => (
-                <th key={h} className="border p-2 bg-gray-50">{h}</th>
-              ))}
+              {["Day", "Date", "In", "Out", "Break", "Total", "Notes"].map(
+                (h) => (
+                  <th key={h} className="border p-2 bg-gray-50">
+                    {h}
+                  </th>
+                )
+              )}
             </tr>
           </thead>
           <tbody>
@@ -297,7 +316,10 @@ export default function TimesheetPage() {
                     className="w-full p-1 border rounded"
                   />
                 </td>
-                <td className="border p-2 text-center">{Math.floor(computeRowMins(r) / 60)}h {computeRowMins(r) % 60}m</td>
+                <td className="border p-2 text-center">
+                  {Math.floor(computeRowMins(r) / 60)}h{" "}
+                  {computeRowMins(r) % 60}m
+                </td>
                 <td className="border p-2">
                   <input
                     id={`notes-${i}`}
@@ -305,7 +327,7 @@ export default function TimesheetPage() {
                     type="text"
                     placeholder="Notes"
                     value={r.notes}
-                    onChange={(e) => handleChange(e, i)}
+                    onChange={(e) => handleChange(e, i)}  
                     className="w-full p-1 border rounded"
                   />
                 </td>
@@ -315,13 +337,20 @@ export default function TimesheetPage() {
         </table>
       </div>
 
-      <div className="text-right font-semibold mb-6">Total {totalH}h {totalR}m</div>
+      {/* Totals */}
+      <div className="text-right font-semibold mb-6">
+        Total {totalH}h {totalR}m
+      </div>
 
       {/* Signature */}
       <div className="mb-6">
-        <label htmlFor="sigpad" className="block mb-2">Signature</label>
+        <label htmlFor="sigpad" className="block mb-2">
+          Signature
+        </label>
         <SignaturePad
-          ref={sigPad}
+          ref={(c: any) => {
+            sigPadRef.current = c
+          }}
           canvasProps={{ id: "sigpad", className: "w-full h-36 border rounded" }}
           onEnd={() => setIsSigned(true)}
         />
@@ -335,7 +364,7 @@ export default function TimesheetPage() {
         </button>
       </div>
 
-      {/* Print & Submit */}
+      {/* Actions */}  
       <div className="flex justify-end space-x-3">
         <button
           onClick={() => window.print()}
