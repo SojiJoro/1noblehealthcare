@@ -1,17 +1,42 @@
-// src/app/api/send-timesheet/route.ts
+// src/app/api/send‑timesheet/route.ts
 
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 
-if (!process.env.RESEND_API_KEY) {
+// Ensure the env var is loaded
+const apiKey = process.env.RESEND_API_KEY
+console.log("🔑 RESEND_API_KEY present?", !!apiKey)
+
+if (!apiKey) {
   console.error("🚨 Missing RESEND_API_KEY in environment")
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
+const resend = apiKey ? new Resend(apiKey) : null
 
 export const runtime = "edge"
 
+//
+// Health‑check GET handler
+//
+export async function GET() {
+  return NextResponse.json({
+    status: "healthy",
+    resendConfigured: !!apiKey
+  })
+}
+
+//
+// POST handler — this is your form submit endpoint
+//
 export async function POST(request: Request) {
+  if (!resend) {
+    console.error("🚨 Aborting POST: Resend not configured")
+    return NextResponse.json(
+      { message: "Server misconfigured: missing RESEND_API_KEY" },
+      { status: 500 }
+    )
+  }
+
   let data: any
   try {
     data = await request.json()
@@ -25,13 +50,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid JSON" }, { status: 400 })
   }
 
-  // Validate
+  // Required fields
   if (!data.clientName || !data.weekEnd) {
-    console.error("🚨 Missing fields")
+    console.error("🚨 Missing clientName or weekEnd")
     return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
   }
 
-  // Build HTML
+  // Build email HTML
   const html = `
     <h1>Timesheet – ${data.clientName}</h1>
     <p>Week ending ${data.weekEnd}</p>
@@ -58,7 +83,7 @@ export async function POST(request: Request) {
     <img src="${data.signature}" alt="signature" style="margin-top:20px; max-width:300px;"/>
   `
 
-  // Send to finance
+  // 1) Send to finance
   try {
     await resend.emails.send({
       from: "Noble Healthcare <info@1noblehealthcare.com>",
@@ -68,11 +93,11 @@ export async function POST(request: Request) {
     })
     console.log("✅ Finance email sent")
   } catch (err: any) {
-    console.error("🚨 Finance send failed", err)
-    return NextResponse.json({ message: "Finance send failed" }, { status: 500 })
+    console.error("🚨 Finance send failed:", err)
+    return NextResponse.json({ message: "Failed to send to finance" }, { status: 500 })
   }
 
-  // User confirmation
+  // 2) Send confirmation to user (non‑blocking)
   if (data.email) {
     try {
       await resend.emails.send({
@@ -83,7 +108,7 @@ export async function POST(request: Request) {
       })
       console.log("✅ User confirmation sent")
     } catch (err: any) {
-      console.error("⚠️ User send failed", err)
+      console.error("⚠️ User send failed:", err)
     }
   }
 
