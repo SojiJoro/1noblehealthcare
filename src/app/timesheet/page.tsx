@@ -67,8 +67,8 @@ export default function TimesheetPage() {
     return Math.max(worked - (Number(r.breakMins)||0), 0)
   }
 
-  const totalMins = form.timesheet.reduce((s,r) => s + computeRowMins(r), 0)
-  const totalH = Math.floor(totalMins/60)
+  const totalMins = form.timesheet.reduce((sum, r) => sum + computeRowMins(r), 0)
+  const totalH = Math.floor(totalMins / 60)
   const totalR = totalMins % 60
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, idx?: number) => {
@@ -85,7 +85,7 @@ export default function TimesheetPage() {
   }
 
   const clearSig = () => {
-    if (sigPad.current?.clear) sigPad.current.clear()
+    sigPad.current?.clear()
     setSigError(false)
     setIsSigned(false)
   }
@@ -110,31 +110,40 @@ export default function TimesheetPage() {
       signature: canvas.toDataURL("image/png"),
     }
 
+    // Abort if it takes more than 10 seconds
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
+
     try {
       const res = await fetch("/api/send-timesheet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
+
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.message || res.statusText)
+
       setMessage("Sent successfully")
+      // reset form
       setForm({
-        clientName: "",
-        site: "",
-        companyAddress: "",
-        contactNumber: "",
-        email: "",
-        weekStart: "",
-        weekEnd: "",
+        clientName: "", site: "", companyAddress: "",
+        contactNumber: "", email: "",
+        weekStart: "", weekEnd: "",
         timesheet: daysOfWeek.map(day => ({
           day, date: "", timeIn: "", timeOut: "", breakMins: "", notes: ""
         })),
       })
       clearSig()
     } catch (err: any) {
-      console.error("Submit error:", err)
-      setMessage("Send failed: " + err.message)
+      clearTimeout(timeout)
+      if (err.name === "AbortError") {
+        setMessage("Send timed out, please try again")
+      } else {
+        setMessage("Send failed: " + err.message)
+      }
     }
   }
 
@@ -143,15 +152,15 @@ export default function TimesheetPage() {
       <h1 className="text-xl font-bold mb-4">Weekly Timesheet</h1>
       {message && <p className="mb-4 text-center">{message}</p>}
 
+      {/* Client & Week Details */}
       <div className="grid md:grid-cols-2 gap-4 mb-6">
-        {/* Client Details */}
         <div>
           <h2 className="font-semibold mb-2">Client Details</h2>
           {[
             { name:"clientName",label:"Client Name",type:"text",auto:"off" },
             { name:"site",label:"Site",type:"text",auto:"off" },
-            { name:"companyAddress",label:"Company Address",type:"text",auto:"off" },
-            { name:"contactNumber",label:"Contact Number",type:"tel",auto:"tel" },
+            { name:"companyAddress",label:"Address",type:"text",auto:"off" },
+            { name:"contactNumber",label:"Contact #",type:"tel",auto:"tel" },
             { name:"email",label:"Email",type:"email",auto:"email" },
           ].map(({ name,label,type,auto })=>(
             <div key={name} className="mb-2">
@@ -168,8 +177,6 @@ export default function TimesheetPage() {
             </div>
           ))}
         </div>
-
-        {/* Week Details */}
         <div>
           <h2 className="font-semibold mb-2">Week Details</h2>
           <div className="mb-2">
@@ -212,7 +219,6 @@ export default function TimesheetPage() {
             <tr key={i}>
               <td className="border p-2">{r.day}</td>
               <td className="border p-2">
-                <label htmlFor={`date-${i}`} className="sr-only">Date</label>
                 <input
                   id={`date-${i}`}
                   name="date"
@@ -223,7 +229,6 @@ export default function TimesheetPage() {
                 />
               </td>
               <td className="border p-2">
-                <label htmlFor={`timeIn-${i}`} className="sr-only">Time In</label>
                 <input
                   id={`timeIn-${i}`}
                   name="timeIn"
@@ -234,7 +239,6 @@ export default function TimesheetPage() {
                 />
               </td>
               <td className="border p-2">
-                <label htmlFor={`timeOut-${i}`} className="sr-only">Time Out</label>
                 <input
                   id={`timeOut-${i}`}
                   name="timeOut"
@@ -245,7 +249,6 @@ export default function TimesheetPage() {
                 />
               </td>
               <td className="border p-2">
-                <label htmlFor={`breakMins-${i}`} className="sr-only">Break Minutes</label>
                 <input
                   id={`breakMins-${i}`}
                   name="breakMins"
@@ -260,12 +263,10 @@ export default function TimesheetPage() {
                 {Math.floor(computeRowMins(r)/60)}h {computeRowMins(r)%60}m
               </td>
               <td className="border p-2">
-                <label htmlFor={`notes-${i}`} className="sr-only">Notes</label>
                 <input
                   id={`notes-${i}`}
                   name="notes"
                   type="text"
-                  autoComplete="off"
                   placeholder="Notes"
                   value={r.notes}
                   onChange={e=>handleChange(e,i)}
@@ -293,7 +294,7 @@ export default function TimesheetPage() {
         <button
           onClick={clearSig}
           type="button"
-          className="mt-3 px-4 py-2 bg-[#20bfa0] border border-[#20bfa0] text-white rounded hover:bg-[#1aa78f]"
+          className="mt-3 px-4 py-2 bg-[#20bfa0] text-white rounded"
         >
           Clear Signature
         </button>
@@ -304,13 +305,13 @@ export default function TimesheetPage() {
         <button
           onClick={()=>window.print()}
           disabled={!isSigned}
-          className="px-5 py-2 bg-[#20bfa0] border border-[#20bfa0] text-white rounded hover:bg-[#1aa78f] disabled:opacity-50"
+          className="px-5 py-2 bg-[#20bfa0] text-white rounded disabled:opacity-50"
         >
           Print
         </button>
         <button
           onClick={submit}
-          className="px-6 py-3 bg-[#20bfa0] border border-[#20bfa0] text-white rounded hover:bg-[#1aa78f]"
+          className="px-6 py-3 bg-[#20bfa0] text-white rounded"
         >
           Submit Timesheet
         </button>

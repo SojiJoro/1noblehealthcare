@@ -1,5 +1,3 @@
-// app/api/send‑timesheet/route.ts
-
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 
@@ -20,17 +18,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid request body" }, { status: 400 })
   }
 
-  console.log("📬 Received timesheet for", data.clientName, "– sending to finance first")
+  console.log("📬 Received timesheet for", data.clientName)
 
-  // Build your HTML once
   const html = `
     <h1>Timesheet – ${data.clientName}</h1>
     <p>Week ending ${data.weekEnd}</p>
-    <table>…</table>
     <img src="${data.signature}" alt="signature"/>
   `
 
-  // 1) Send to finance
+  // 1) Finance
   try {
     await resend.emails.send({
       from: "Noble Healthcare <info@1noblehealthcare.com>",
@@ -40,14 +36,11 @@ export async function POST(request: Request) {
     })
     console.log("✅ Finance email sent")
   } catch (err: any) {
-    console.error("🚨 Failed to send to finance", err)
-    return NextResponse.json(
-      { message: "Failed to send to finance: " + err.message },
-      { status: 500 }
-    )
+    console.error("🚨 Finance send failed", err)
+    return NextResponse.json({ message: "Failed to send to finance" }, { status: 500 })
   }
 
-  // 2) Send confirmation to user, but don’t block on failure
+  // 2) User
   if (data.email) {
     try {
       await resend.emails.send({
@@ -58,13 +51,9 @@ export async function POST(request: Request) {
       })
       console.log("✅ User confirmation sent to", data.email)
     } catch (err: any) {
-      console.error("⚠️ Failed to send confirmation to user:", err)
-      // we intentionally don’t return an error here
+      console.error("⚠️ User send failed", err)
     }
-  } else {
-    console.log("⚠️ No user email provided, skipped user send")
   }
 
-  // Always return success if finance send succeeded
-  return NextResponse.json({ message: "Timesheet sent to finance and user" })
+  return NextResponse.json({ message: "Timesheet sent" })
 }
