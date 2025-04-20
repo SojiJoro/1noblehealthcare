@@ -5,13 +5,7 @@ import SignaturePad from "react-signature-canvas"
 import { format, addDays } from "date-fns"
 
 const daysOfWeek = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
+  "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday",
 ]
 
 type Row = {
@@ -42,20 +36,16 @@ export default function TimesheetPage() {
     weekStart: "",
     weekEnd: "",
     timesheet: daysOfWeek.map(day => ({
-      day,
-      date: "",
-      timeIn: "",
-      timeOut: "",
-      breakMins: "",
-      notes: "",
+      day, date: "", timeIn: "", timeOut: "", breakMins: "", notes: ""
     })),
   })
 
   const [message, setMessage] = useState<string | null>(null)
-  const sigPad = useRef<SignaturePad>(null)
+  const sigPad = useRef<any>(null)
   const [sigError, setSigError] = useState(false)
   const [isSigned, setIsSigned] = useState(false)
 
+  // auto‑fill dates & weekEnd
   useEffect(() => {
     if (!form.weekStart) return
     const start = new Date(form.weekStart)
@@ -71,27 +61,22 @@ export default function TimesheetPage() {
 
   const computeRowMins = (r: Row) => {
     if (!r.timeIn || !r.timeOut) return 0
-    const [h1, m1] = r.timeIn.split(":").map(Number)
-    const [h2, m2] = r.timeOut.split(":").map(Number)
-    const worked = h2 * 60 + m2 - (h1 * 60 + m1)
-    const brk = Number(r.breakMins) || 0
-    return Math.max(worked - brk, 0)
+    const [h1,m1] = r.timeIn.split(":").map(Number)
+    const [h2,m2] = r.timeOut.split(":").map(Number)
+    const worked = h2*60 + m2 - (h1*60 + m1)
+    return Math.max(worked - (Number(r.breakMins)||0), 0)
   }
 
-  const totalMins = form.timesheet.reduce((sum, r) => sum + computeRowMins(r), 0)
-  const totalH = Math.floor(totalMins / 60)
+  const totalMins = form.timesheet.reduce((s,r) => s + computeRowMins(r), 0)
+  const totalH = Math.floor(totalMins/60)
   const totalR = totalMins % 60
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    index?: number
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, idx?: number) => {
     const { name, value } = e.target
-    if (typeof index === "number") {
+    if (typeof idx === "number") {
       setForm(f => {
         const ts = [...f.timesheet]
-        // @ts-ignore
-        ts[index][name] = value
+        ts[idx] = { ...ts[idx], [name]: value }
         return { ...f, timesheet: ts }
       })
     } else {
@@ -100,15 +85,13 @@ export default function TimesheetPage() {
   }
 
   const clearSig = () => {
-    sigPad.current?.clear()
+    if (sigPad.current?.clear) sigPad.current.clear()
     setSigError(false)
     setIsSigned(false)
   }
 
   const submit = async () => {
-    console.log("↗️ submit called", { isSigned })
-    if (!isSigned) {
-      console.warn("🚫 no signature")
+    if (!isSigned || sigPad.current?.isEmpty()) {
       setSigError(true)
       setMessage("Please sign before sending")
       return
@@ -116,11 +99,16 @@ export default function TimesheetPage() {
     setSigError(false)
     setMessage("Sending…")
 
+    const canvas = sigPad.current?.getTrimmedCanvas()
+    if (!canvas) {
+      setMessage("Unexpected signature error")
+      return
+    }
+
     const payload = {
       ...form,
-      signature: sigPad.current?.getTrimmedCanvas().toDataURL("image/png"),
+      signature: canvas.toDataURL("image/png"),
     }
-    console.log("📨 payload", payload)
 
     try {
       const res = await fetch("/api/send-timesheet", {
@@ -128,21 +116,8 @@ export default function TimesheetPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
-      console.log("⬅️ status", res.status)
-
-      let json: any
-      try {
-        json = await res.json()
-      } catch (err) {
-        console.warn("⚠️ invalid JSON response", err)
-        throw new Error(`Unexpected response status ${res.status}`)
-      }
-      console.log("⬅️ response", json)
-
-      if (!res.ok) {
-        throw new Error(json.message || res.statusText)
-      }
-
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.message || res.statusText)
       setMessage("Sent successfully")
       setForm({
         clientName: "",
@@ -153,17 +128,12 @@ export default function TimesheetPage() {
         weekStart: "",
         weekEnd: "",
         timesheet: daysOfWeek.map(day => ({
-          day,
-          date: "",
-          timeIn: "",
-          timeOut: "",
-          breakMins: "",
-          notes: "",
+          day, date: "", timeIn: "", timeOut: "", breakMins: "", notes: ""
         })),
       })
       clearSig()
     } catch (err: any) {
-      console.error("❌ submit error", err)
+      console.error("Submit error:", err)
       setMessage("Send failed: " + err.message)
     }
   }
@@ -174,98 +144,115 @@ export default function TimesheetPage() {
       {message && <p className="mb-4 text-center">{message}</p>}
 
       <div className="grid md:grid-cols-2 gap-4 mb-6">
+        {/* Client Details */}
         <div>
           <h2 className="font-semibold mb-2">Client Details</h2>
           {[
-            { name: "clientName", type: "text" },
-            { name: "site", type: "text" },
-            { name: "companyAddress", type: "text" },
-            { name: "contactNumber", type: "text" },
-            { name: "email", type: "email" },
-          ].map(fld => (
-            <div key={fld.name} className="mb-2">
-              <label className="block mb-1 capitalize">{fld.name}</label>
+            { name:"clientName",label:"Client Name",type:"text",auto:"off" },
+            { name:"site",label:"Site",type:"text",auto:"off" },
+            { name:"companyAddress",label:"Company Address",type:"text",auto:"off" },
+            { name:"contactNumber",label:"Contact Number",type:"tel",auto:"tel" },
+            { name:"email",label:"Email",type:"email",auto:"email" },
+          ].map(({ name,label,type,auto })=>(
+            <div key={name} className="mb-2">
+              <label htmlFor={name} className="block mb-1">{label}</label>
               <input
-                name={fld.name}
-                type={fld.type}
-                value={(form as any)[fld.name]}
+                id={name}
+                name={name}
+                type={type}
+                autoComplete={auto}
+                value={(form as any)[name]}
                 onChange={handleChange}
                 className="w-full border p-2 rounded"
               />
             </div>
           ))}
         </div>
+
+        {/* Week Details */}
         <div>
           <h2 className="font-semibold mb-2">Week Details</h2>
           <div className="mb-2">
-            <label className="block mb-1">Start</label>
+            <label htmlFor="weekStart" className="block mb-1">Week Start</label>
             <input
-              type="date"
+              id="weekStart"
               name="weekStart"
+              type="date"
+              autoComplete="off"
               value={form.weekStart}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />
           </div>
           <div>
-            <label className="block mb-1">End</label>
+            <label htmlFor="weekEnd" className="block mb-1">Week End</label>
             <input
-              type="date"
+              id="weekEnd"
               name="weekEnd"
+              type="date"
               readOnly
               value={form.weekEnd}
-                className="w-full bg-gray-100 border p-2 rounded"
+              className="w-full bg-gray-100 border p-2 rounded"
             />
           </div>
         </div>
       </div>
 
+      {/* Timesheet Table */}
       <table className="w-full border-collapse mb-4">
         <thead>
           <tr>
-            {["Day","Date","In","Out","Break","Total","Notes"].map(h => (
+            {["Day","Date","In","Out","Break","Total","Notes"].map(h=>(
               <th key={h} className="border p-2">{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {form.timesheet.map((r, i) => (
+          {form.timesheet.map((r,i)=>(
             <tr key={i}>
               <td className="border p-2">{r.day}</td>
               <td className="border p-2">
+                <label htmlFor={`date-${i}`} className="sr-only">Date</label>
                 <input
-                  type="date"
+                  id={`date-${i}`}
                   name="date"
+                  type="date"
                   value={r.date}
-                  onChange={e => handleChange(e, i)}
+                  onChange={e=>handleChange(e,i)}
                   className="w-full p-1 border rounded"
                 />
               </td>
               <td className="border p-2">
+                <label htmlFor={`timeIn-${i}`} className="sr-only">Time In</label>
                 <input
-                  type="time"
+                  id={`timeIn-${i}`}
                   name="timeIn"
-                  value={r.timeIn}
-                  onChange={e => handleChange(e, i)}
-                  className="w-full p-1 border rounded"
-                />
-              </td>
-              <td className="border p-2">
-                <input
                   type="time"
-                  name="timeOut"
-                  value={r.timeOut}
-                  onChange={e => handleChange(e, i)}
+                  value={r.timeIn}
+                  onChange={e=>handleChange(e,i)}
                   className="w-full p-1 border rounded"
                 />
               </td>
               <td className="border p-2">
+                <label htmlFor={`timeOut-${i}`} className="sr-only">Time Out</label>
                 <input
-                  type="number"
+                  id={`timeOut-${i}`}
+                  name="timeOut"
+                  type="time"
+                  value={r.timeOut}
+                  onChange={e=>handleChange(e,i)}
+                  className="w-full p-1 border rounded"
+                />
+              </td>
+              <td className="border p-2">
+                <label htmlFor={`breakMins-${i}`} className="sr-only">Break Minutes</label>
+                <input
+                  id={`breakMins-${i}`}
                   name="breakMins"
+                  type="number"
                   placeholder="mins"
                   value={r.breakMins}
-                  onChange={e => handleChange(e, i)}
+                  onChange={e=>handleChange(e,i)}
                   className="w-full p-1 border rounded"
                 />
               </td>
@@ -273,10 +260,15 @@ export default function TimesheetPage() {
                 {Math.floor(computeRowMins(r)/60)}h {computeRowMins(r)%60}m
               </td>
               <td className="border p-2">
+                <label htmlFor={`notes-${i}`} className="sr-only">Notes</label>
                 <input
+                  id={`notes-${i}`}
                   name="notes"
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Notes"
                   value={r.notes}
-                  onChange={e => handleChange(e, i)}
+                  onChange={e=>handleChange(e,i)}
                   className="w-full p-1 border rounded"
                 />
               </td>
@@ -289,34 +281,36 @@ export default function TimesheetPage() {
         Total {totalH}h {totalR}m
       </div>
 
+      {/* Signature */}
       <div className="mb-6">
-        <label className="block mb-2">Signature</label>
+        <label htmlFor="sigpad" className="block mb-2">Signature</label>
         <SignaturePad
           ref={sigPad}
-          canvasProps={{ className: "w-full h-36 border rounded" }}
-          onEnd={() => setIsSigned(true)}
+          canvasProps={{ id: "sigpad", className: "w-full h-36 border rounded" }}
+          onEnd={()=>setIsSigned(true)}
         />
         {sigError && <p className="text-red-600 mt-1">Signature required</p>}
         <button
           onClick={clearSig}
           type="button"
-          className="mt-3 px-4 py-2 bg-[#20bfa0] border border-[#20bfa0] text-white rounded hover:bg-[#1aa78f] transition"
+          className="mt-3 px-4 py-2 bg-[#20bfa0] border border-[#20bfa0] text-white rounded hover:bg-[#1aa78f]"
         >
           Clear Signature
         </button>
       </div>
 
+      {/* Print & Submit */}
       <div className="flex justify-end space-x-3">
         <button
-          onClick={() => window.print()}
+          onClick={()=>window.print()}
           disabled={!isSigned}
-          className="px-5 py-2 bg-[#20bfa0] border border-[#20bfa0] text-white rounded hover:bg-[#1aa78f] disabled:opacity-50 disabled:cursor-not-allowed transition"
+          className="px-5 py-2 bg-[#20bfa0] border border-[#20bfa0] text-white rounded hover:bg-[#1aa78f] disabled:opacity-50"
         >
           Print
         </button>
         <button
           onClick={submit}
-          className="px-6 py-3 bg-[#20bfa0] border border-[#20bfa0] text-white rounded hover:bg-[#1aa78f] transition"
+          className="px-6 py-3 bg-[#20bfa0] border border-[#20bfa0] text-white rounded hover:bg-[#1aa78f]"
         >
           Submit Timesheet
         </button>
