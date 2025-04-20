@@ -1,4 +1,4 @@
-// src/app/page.tsx
+// src/app/timesheet/page.tsx
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
@@ -42,13 +42,13 @@ export default function TimesheetPage() {
     email: "",
     weekStart: "",
     weekEnd: "",
-    timesheet: daysOfWeek.map(day => ({
+    timesheet: daysOfWeek.map((day) => ({
       day,
       date: "",
       timeIn: "",
       timeOut: "",
       breakMins: "",
-      notes: ""
+      notes: "",
     })),
   })
 
@@ -61,7 +61,7 @@ export default function TimesheetPage() {
   useEffect(() => {
     if (!form.weekStart) return
     const start = new Date(form.weekStart)
-    setForm(f => ({
+    setForm((f) => ({
       ...f,
       weekEnd: format(addDays(start, 6), "yyyy-MM-dd"),
       timesheet: f.timesheet.map((r, i) => ({
@@ -86,17 +86,20 @@ export default function TimesheetPage() {
   const totalH = Math.floor(totalMins / 60)
   const totalR = totalMins % 60
 
-  // Handle any input change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, idx?: number) => {
+  // Handle input change
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    idx?: number
+  ) => {
     const { name, value } = e.target
     if (typeof idx === "number") {
-      setForm(f => {
+      setForm((f) => {
         const ts = [...f.timesheet]
         ts[idx] = { ...ts[idx], [name]: value }
         return { ...f, timesheet: ts }
       })
     } else {
-      setForm(f => ({ ...f, [name]: value }))
+      setForm((f) => ({ ...f, [name]: value }))
     }
   }
 
@@ -107,7 +110,7 @@ export default function TimesheetPage() {
     setIsSigned(false)
   }
 
-  // Submit handler
+  // Submit handler: calls /api/timesheet
   const submit = async () => {
     console.log("↗️ submit() start, isSigned=", isSigned)
     if (!isSigned || sigPad.current?.isEmpty()) {
@@ -131,7 +134,7 @@ export default function TimesheetPage() {
     console.log("📨 payload:", payload)
 
     try {
-      const res = await fetch("/api/send-timesheet", {
+      const res = await fetch("/api/timesheet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -141,9 +144,7 @@ export default function TimesheetPage() {
       const data = await res.json().catch(() => ({}))
       console.log("⬅️ json:", data)
 
-      if (!res.ok) {
-        throw new Error(data.message || res.statusText)
-      }
+      if (!res.ok) throw new Error(data.message || res.statusText)
 
       setMessage("Sent successfully")
       console.log("✅ submit() complete")
@@ -157,13 +158,13 @@ export default function TimesheetPage() {
         email: "",
         weekStart: "",
         weekEnd: "",
-        timesheet: daysOfWeek.map(day => ({
+        timesheet: daysOfWeek.map((day) => ({
           day,
           date: "",
           timeIn: "",
           timeOut: "",
           breakMins: "",
-          notes: ""
+          notes: "",
         })),
       })
       clearSig()
@@ -179,7 +180,9 @@ export default function TimesheetPage() {
       {message && (
         <div
           className={`p-2 mb-4 rounded ${
-            message.includes("success") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+            message.includes("success")
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
           }`}
         >
           {message}
@@ -244,7 +247,7 @@ export default function TimesheetPage() {
         <table className="w-full table-auto border-collapse text-sm">
           <thead>
             <tr>
-              {["Day", "Date", "In", "Out", "Break", "Total", "Notes"].map(h => (
+              {["Day", "Date", "In", "Out", "Break", "Total", "Notes"].map((h) => (
                 <th key={h} className="border p-2 bg-gray-50">{h}</th>
               ))}
             </tr>
@@ -259,7 +262,7 @@ export default function TimesheetPage() {
                     name="date"
                     type="date"
                     value={r.date}
-                    onChange={e => handleChange(e, i)}
+                    onChange={(e) => handleChange(e, i)}
                     className="w-full p-1 border rounded"
                   />
                 </td>
@@ -269,7 +272,7 @@ export default function TimesheetPage() {
                     name="timeIn"
                     type="time"
                     value={r.timeIn}
-                    onChange={e => handleChange(e, i)}
+                    onChange={(e) => handleChange(e, i)}
                     className="w-full p-1 border rounded"
                   />
                 </td>
@@ -279,7 +282,7 @@ export default function TimesheetPage() {
                     name="timeOut"
                     type="time"
                     value={r.timeOut}
-                    onChange={e => handleChange(e, i)}
+                    onChange={(e) => handleChange(e, i)}
                     className="w-full p-1 border rounded"
                   />
                 </td>
@@ -290,13 +293,11 @@ export default function TimesheetPage() {
                     type="number"
                     placeholder="mins"
                     value={r.breakMins}
-                    onChange={e => handleChange(e, i)}
+                    onChange={(e) => handleChange(e, i)}
                     className="w-full p-1 border rounded"
                   />
                 </td>
-                <td className="border p-2 text-center">
-                  {Math.floor(computeRowMins(r) / 60)}h {computeRowMins(r) % 60}m
-                </td>
+                <td className="border p-2 text-center">{Math.floor(computeRowMins(r) / 60)}h {computeRowMins(r) % 60}m</td>
                 <td className="border p-2">
                   <input
                     id={`notes-${i}`}
@@ -304,7 +305,7 @@ export default function TimesheetPage() {
                     type="text"
                     placeholder="Notes"
                     value={r.notes}
-                    onChange={e => handleChange(e, i)}
+                    onChange={(e) => handleChange(e, i)}
                     className="w-full p-1 border rounded"
                   />
                 </td>
@@ -314,9 +315,7 @@ export default function TimesheetPage() {
         </table>
       </div>
 
-      <div className="text-right font-semibold mb-6">
-        Total {totalH}h {totalR}m
-      </div>
+      <div className="text-right font-semibold mb-6">Total {totalH}h {totalR}m</div>
 
       {/* Signature */}
       <div className="mb-6">
