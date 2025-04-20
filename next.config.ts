@@ -1,16 +1,17 @@
 // next.config.js
+
 const withPWA = require("next-pwa")({
   dest: "public",
   register: true,
   skipWaiting: true,
+  // disable PWA in dev so it doesn’t interfere locally
   disable: process.env.NODE_ENV === "development",
-});
+})
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
 
-  // Tell Turbopack to use your Webpack config instead of defaulting
   experimental: {
     turbo: {
       webpackConfig: true,
@@ -19,34 +20,29 @@ const nextConfig = {
 
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
-        hostname: "source.unsplash.com",
-      },
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "source.unsplash.com" },
     ],
   },
 
-  // Only apply CSP in production to avoid dev-time issues
+  // Only add the CSP allowing unsafe-eval in production
   async headers() {
-    if (process.env.NODE_ENV !== 'production') {
-      return [];
+    if (process.env.NODE_ENV !== "production") {
+      return []
     }
     return [
       {
-        source: '/:path*',
+        // apply this to every route in production
+        source: "/(.*)",
         headers: [
           {
-            key: 'Content-Security-Policy',
+            key: "Content-Security-Policy",
             value: "script-src 'self' 'unsafe-eval'; object-src 'none';",
           },
         ],
       },
-    ];
+    ]
   },
-};
+}
 
-module.exports = withPWA(nextConfig);
+module.exports = withPWA(nextConfig)
