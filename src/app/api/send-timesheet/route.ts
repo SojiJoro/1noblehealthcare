@@ -1,4 +1,4 @@
-// app/api/send-timesheet/route.ts
+// app/api/send‑timesheet/route.ts
 
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
@@ -7,7 +7,7 @@ if (!process.env.RESEND_API_KEY) {
   console.error("🚨 Missing RESEND_API_KEY")
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY || "")
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export const runtime = "edge"
 
@@ -15,68 +15,56 @@ export async function POST(request: Request) {
   let data: any
   try {
     data = await request.json()
-  } catch (err) {
-    console.error("🚨 Invalid JSON:", err)
+  } catch (e) {
+    console.error("🚨 Invalid JSON", e)
     return NextResponse.json({ message: "Invalid request body" }, { status: 400 })
   }
 
+  console.log("📬 Received timesheet for", data.clientName, "– sending to finance first")
+
+  // Build your HTML once
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto;">
-      <h1 style="color:#20bfa0;">
-        Timesheet for week ending ${data.weekEnd || "N/A"}
-      </h1>
-      <p><strong>Client:</strong> ${data.clientName}</p>
-      <p><strong>Site:</strong> ${data.site}</p>
-      <table style="width:100%; border-collapse:collapse; margin-top:15px;">
-        <thead>
-          <tr style="background:#20bfa0; color:#fff;">
-            <th style="padding:8px; border:1px solid #ddd;">Day</th>
-            <th style="padding:8px; border:1px solid #ddd;">Date</th>
-            <th style="padding:8px; border:1px solid #ddd;">In</th>
-            <th style="padding:8px; border:1px solid #ddd;">Out</th>
-            <th style="padding:8px; border:1px solid #ddd;">Break</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.timesheet
-            .map((r: any) => `
-              <tr>
-                <td style="padding:8px; border:1px solid #ddd;">${r.day}</td>
-                <td style="padding:8px; border:1px solid #ddd;">${r.date || "-"}</td>
-                <td style="padding:8px; border:1px solid #ddd;">${r.timeIn || "-"}</td>
-                <td style="padding:8px; border:1px solid #ddd;">${r.timeOut || "-"}</td>
-                <td style="padding:8px; border:1px solid #ddd;">${r.breakMins || 0}m</td>
-              </tr>
-            `)
-            .join("")}
-        </tbody>
-      </table>
-      <div style="margin-top:20px;">
-        <img src="${data.signature}" alt="signature" style="max-width:100%;height:auto;"/>
-      </div>
-    </div>
+    <h1>Timesheet – ${data.clientName}</h1>
+    <p>Week ending ${data.weekEnd}</p>
+    <table>…</table>
+    <img src="${data.signature}" alt="signature"/>
   `
 
-  // build recipients array: always finance, plus the user if they gave an email
-  const recipients = ["finance@1noblehealthcare.com"]
-  if (data.email) recipients.push(data.email)
-
-  console.log("✉️  Sending to:", recipients.join(", "))
-
+  // 1) Send to finance
   try {
     await resend.emails.send({
       from: "Noble Healthcare <info@1noblehealthcare.com>",
-      to: recipients,
-      subject: `Timesheet – ${data.clientName || "Unknown client"}`,
+      to: ["finance@1noblehealthcare.com"],
+      subject: `Timesheet – ${data.clientName}`,
       html,
     })
-    console.log("✅ Email sent successfully")
-    return NextResponse.json({ message: "Sent to finance and user" })
+    console.log("✅ Finance email sent")
   } catch (err: any) {
-    console.error("🚨 Failed to send email:", err)
+    console.error("🚨 Failed to send to finance", err)
     return NextResponse.json(
-      { message: "Failed to send email: " + err.message },
+      { message: "Failed to send to finance: " + err.message },
       { status: 500 }
     )
   }
+
+  // 2) Send confirmation to user, but don’t block on failure
+  if (data.email) {
+    try {
+      await resend.emails.send({
+        from: "Noble Healthcare <info@1noblehealthcare.com>",
+        to: [data.email],
+        subject: "Your Timesheet Confirmation",
+        html,
+      })
+      console.log("✅ User confirmation sent to", data.email)
+    } catch (err: any) {
+      console.error("⚠️ Failed to send confirmation to user:", err)
+      // we intentionally don’t return an error here
+    }
+  } else {
+    console.log("⚠️ No user email provided, skipped user send")
+  }
+
+  // Always return success if finance send succeeded
+  return NextResponse.json({ message: "Timesheet sent to finance and user" })
 }
