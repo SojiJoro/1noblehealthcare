@@ -1,14 +1,8 @@
+// src/app/timesheet/page.tsx
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import dynamic from "next/dynamic";
+import React, { useState, useEffect } from "react";
 import { format, addDays } from "date-fns";
-
-// Dynamically load the default export of react-signature-canvas
-const SignatureCanvas = dynamic(
-  () => import("react-signature-canvas"),
-  { ssr: false }
-) as any;
 
 const daysOfWeek = [
   "Monday",
@@ -57,12 +51,15 @@ export default function TimesheetPage() {
     })),
   });
 
-  const [message, setMessage] = useState<string | null>(null);
-  const sigPadRef = useRef<any>(null);
-  const [sigError, setSigError] = useState(false);
-  const [isSigned, setIsSigned] = useState(false);
+  // Signature mode: upload image or type name
+  const [sigMode, setSigMode] = useState<"upload" | "type">("upload");
+  const [signatureData, setSignatureData] = useState<string>(""); // dataURL
+  const [typedName, setTypedName] = useState<string>("");
 
-  // Auto-fill dates & weekEnd when weekStart changes
+  const [message, setMessage] = useState<string | null>(null);
+  const [sigError, setSigError] = useState(false);
+
+  // Auto-fill dates & weekEnd
   useEffect(() => {
     if (!form.weekStart) return;
     const start = new Date(form.weekStart);
@@ -76,18 +73,21 @@ export default function TimesheetPage() {
     }));
   }, [form.weekStart]);
 
+  // Calculate minutes per row
   const computeRowMins = (r: Row) => {
     if (!r.timeIn || !r.timeOut) return 0;
     const [h1, m1] = r.timeIn.split(":").map(Number);
     const [h2, m2] = r.timeOut.split(":").map(Number);
     const worked = h2 * 60 + m2 - (h1 * 60 + m1);
-    return Math.max(worked - (Number(r.breakMins) || 0), 0);
+    const brk = Number(r.breakMins) || 0;
+    return Math.max(worked - brk, 0);
   };
 
   const totalMins = form.timesheet.reduce((sum, r) => sum + computeRowMins(r), 0);
   const totalH = Math.floor(totalMins / 60);
   const totalR = totalMins % 60;
 
+  // Generic input/change handlers
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement>,
     idx?: number
@@ -104,27 +104,37 @@ export default function TimesheetPage() {
     }
   }
 
-  function clearSig() {
-    sigPadRef.current?.clear();
+  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     setSigError(false);
-    setIsSigned(false);
+    const file = e.target.files?.[0];
+    if (!file) {
+      setSignatureData("");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setSignatureData(reader.result as string);
+    reader.readAsDataURL(file);
   }
 
+  // Submit the form
   async function submit() {
-    // Validate signature
-    if (!sigPadRef.current || sigPadRef.current.isEmpty()) {
+    // Validate signature presence
+    if (
+      (sigMode === "upload" && !signatureData) ||
+      (sigMode === "type" && !typedName.trim())
+    ) {
       setSigError(true);
-      setMessage("Please sign before sending");
+      setMessage("Please provide a signature before submitting");
       return;
     }
     setSigError(false);
     setMessage("Sending…");
 
-    // Now get the trimmed canvas — this will always work because sigPadRef.current is the real component
-    const canvas = sigPadRef.current.getTrimmedCanvas();
     const payload = {
       ...form,
-      signature: canvas.toDataURL("image/png"),
+      // send typedName or image data URL
+      signature:
+        sigMode === "upload" ? signatureData : `Signed: ${typedName.trim()}`,
     };
 
     try {
@@ -137,7 +147,7 @@ export default function TimesheetPage() {
       if (!res.ok) throw new Error(data.message || res.statusText);
 
       setMessage("Sent successfully");
-      // Reset form
+      // Reset form and signature
       setForm({
         clientName: "",
         site: "",
@@ -155,7 +165,8 @@ export default function TimesheetPage() {
           notes: "",
         })),
       });
-      clearSig();
+      setSignatureData("");
+      setTypedName("");
     } catch (err: any) {
       console.error("Submit error:", err);
       setMessage("Send failed: " + err.message);
@@ -178,7 +189,7 @@ export default function TimesheetPage() {
         </div>
       )}
 
-      {/* Client & Week */}
+      {/* Client & Week Details */}
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         <div>
           <h2 className="font-semibold mb-2">Client Details</h2>
@@ -199,7 +210,7 @@ export default function TimesheetPage() {
                 type={type}
                 autoComplete="off"
                 value={(form as any)[name]}
-                onChange={(e) => handleChange(e)}
+                onChange={handleChange}
                 className="w-full border p-2 rounded"
               />
             </div>
@@ -217,7 +228,7 @@ export default function TimesheetPage() {
               name="weekStart"
               type="date"
               value={form.weekStart}
-              onChange={(e) => handleChange(e)}
+              onChange={handleChange}
               className="w-full border p-2 rounded"
             />
           </div>
@@ -242,13 +253,19 @@ export default function TimesheetPage() {
         <table className="w-full table-auto border-collapse text-sm">
           <thead>
             <tr>
-              {["Day", "Date", "In", "Out", "Break", "Total", "Notes"].map(
-                (h) => (
-                  <th key={h} className="border p-2 bg-gray-50">
-                    {h}
-                  </th>
-                )
-              )}
+              {[
+                "Day",
+                "Date",
+                "In",
+                "Out",
+                "Break",
+                "Total",
+                "Notes",
+              ].map((h) => (
+                <th key={h} className="border p-2 bg-gray-50">
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -256,6 +273,9 @@ export default function TimesheetPage() {
               <tr key={i}>
                 <td className="border p-2">{r.day}</td>
                 <td className="border p-2">
+                  <label htmlFor={`date-${i}`} className="sr-only">
+                    Date
+                  </label>
                   <input
                     id={`date-${i}`}
                     name="date"
@@ -266,6 +286,9 @@ export default function TimesheetPage() {
                   />
                 </td>
                 <td className="border p-2">
+                  <label htmlFor={`timeIn-${i}`} className="sr-only">
+                    Time In
+                  </label>
                   <input
                     id={`timeIn-${i}`}
                     name="timeIn"
@@ -276,6 +299,9 @@ export default function TimesheetPage() {
                   />
                 </td>
                 <td className="border p-2">
+                  <label htmlFor={`timeOut-${i}`} className="sr-only">
+                    Time Out
+                  </label>
                   <input
                     id={`timeOut-${i}`}
                     name="timeOut"
@@ -286,6 +312,9 @@ export default function TimesheetPage() {
                   />
                 </td>
                 <td className="border p-2">
+                  <label htmlFor={`breakMins-${i}`} className="sr-only">
+                    Break Minutes
+                  </label>
                   <input
                     id={`breakMins-${i}`}
                     name="breakMins"
@@ -301,6 +330,9 @@ export default function TimesheetPage() {
                   {computeRowMins(r) % 60}m
                 </td>
                 <td className="border p-2">
+                  <label htmlFor={`notes-${i}`} className="sr-only">
+                    Notes
+                  </label>
                   <input
                     id={`notes-${i}`}
                     name="notes"
@@ -322,30 +354,82 @@ export default function TimesheetPage() {
         Total {totalH}h {totalR}m
       </div>
 
-      {/* Signature */}
+      {/* Signature Section */}
       <div className="mb-6">
-        <label className="block mb-2">Signature</label>
-        <SignatureCanvas
-          ref={sigPadRef}
-          canvasProps={{ className: "w-full h-36 border rounded" }}
-          onEnd={() => setIsSigned(true)}
-        />
-        {sigError && <p className="text-red-600 mt-1">Signature required</p>}
-        <button
-          onClick={clearSig}
-          type="button"
-          className="mt-2 px-4 py-2 bg-[#20bfa0] text-white rounded"
-        >
-          Clear Signature
-        </button>
+        <h2 className="font-semibold mb-2">Signature</h2>
+        <div className="flex items-center mb-2 space-x-4">
+          <label>
+            <input
+              type="radio"
+              name="sigMode"
+              value="upload"
+              checked={sigMode === "upload"}
+              onChange={() => setSigMode("upload")}
+            />{" "}
+            Upload Image
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="sigMode"
+              value="type"
+              checked={sigMode === "type"}
+              onChange={() => setSigMode("type")}
+            />{" "}
+            Type Name
+          </label>
+        </div>
+
+        {sigMode === "upload" ? (
+          <>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleUpload}
+              className="block mb-2"
+            />
+            {signatureData && (
+              <img
+                src={signatureData}
+                alt="Uploaded signature"
+                className="mt-2 border rounded max-h-32"
+              />
+            )}
+          </>
+        ) : (
+          <>
+            <label htmlFor="typedSignature" className="block mb-1 sr-only">
+              Type your name as signature
+            </label>
+            <input
+              id="typedSignature"
+              type="text"
+              placeholder="Type your name"
+              value={typedName}
+              onChange={(e) => {
+                setTypedName(e.target.value);
+                setSigError(false);
+              }}
+              className="w-full border p-2 rounded mb-2"
+            />
+            {typedName && (
+              <p className="italic text-lg border-b pb-1">
+                {typedName}
+              </p>
+            )}
+          </>
+        )}
+
+        {sigError && (
+          <p className="text-red-600 mt-1">Signature is required</p>
+        )}
       </div>
 
       {/* Actions */}
       <div className="flex justify-end space-x-3">
         <button
           onClick={() => window.print()}
-          disabled={!isSigned}
-          className="px-5 py-2 bg-[#20bfa0] text-white rounded disabled:opacity-50"
+          className="px-5 py-2 bg-[#20bfa0] text-white rounded"
         >
           Print
         </button>
