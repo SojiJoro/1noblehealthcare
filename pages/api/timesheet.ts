@@ -15,10 +15,18 @@ async function buildPdf(data: any): Promise<Buffer> {
     doc.on("end", () => resolve(Buffer.concat(bufs)));
     doc.on("error", reject);
 
-    // Title
-    doc.fontSize(18).text(`Timesheet – ${data.clientName}`, { align: "center" });
-    doc.moveDown(0.5).fontSize(12).text(`Week ending ${data.weekEnd}`, { align: "center" });
-    doc.moveDown(1);
+    // Title and header
+    doc
+      .fontSize(18)
+      .text(`Timesheet – ${data.staffName}`, { align: "center" })
+      .moveDown(0.5)
+      .fontSize(12)
+      .text(`Week ending ${data.weekEnd}`, { align: "center" })
+      .moveDown(0.5)
+      .text(`Shift Location: ${data.shiftLocation}`, { align: "center" })
+      .moveDown(0.5)
+      .text(`Total Hours: ${data.totalHours}`, { align: "center" })
+      .moveDown(1);
 
     // Table header
     const startX = 50;
@@ -26,7 +34,7 @@ async function buildPdf(data: any): Promise<Buffer> {
     doc.fontSize(10)
       .text("Day (Date)", startX, doc.y)
       .text("In–Out", startX + col1, doc.y)
-      .text("Notes", startX + col1 + col2, doc.y);
+      .text("Client Initials", startX + col1 + col2, doc.y);
     doc.moveDown(0.5);
 
     // Rows
@@ -54,12 +62,9 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
-  // GET health check
   if (req.method === "GET") {
     return res.status(200).json({ message: "Healthy", status: "ok" });
   }
-
-  // Only POST for submissions
   if (req.method !== "POST") {
     res.setHeader("Allow", ["GET", "POST"]);
     return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
@@ -71,12 +76,14 @@ export default async function handler(
     return res.status(500).json({ message: "Missing RESEND_API_KEY" });
   }
   const resend = new Resend(apiKey);
-
   const data = req.body;
-  // Validate
+
+  // Validate required fields
   if (
-    !data.clientName ||
+    !data.staffName ||
     !data.weekEnd ||
+    !data.shiftLocation ||
+    !data.totalHours ||
     !Array.isArray(data.timesheet) ||
     typeof data.signature !== "string"
   ) {
@@ -90,14 +97,16 @@ export default async function handler(
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
-      <h1>Timesheet – ${data.clientName}</h1>
+      <h1>Timesheet – ${data.staffName}</h1>
       <p>Week ending ${data.weekEnd}</p>
+      <p><strong>Shift Location:</strong> ${data.shiftLocation}</p>
+      <p><strong>Total Hours:</strong> ${data.totalHours}</p>
       <table style="width:100%;border-collapse:collapse;">
         <thead>
           <tr>
             <th style="border:1px solid #ddd;padding:8px">Day</th>
             <th style="border:1px solid #ddd;padding:8px">Time</th>
-            <th style="border:1px solid #ddd;padding:8px">Notes</th>
+            <th style="border:1px solid #ddd;padding:8px">Client Initials</th>
           </tr>
         </thead>
         <tbody>
@@ -114,7 +123,7 @@ export default async function handler(
     </div>
   `;
 
-  // Generate the PDF server‑side
+  // Generate PDF
   let pdfBuf: Buffer;
   try {
     pdfBuf = await buildPdf(data);
@@ -123,16 +132,16 @@ export default async function handler(
     return res.status(500).json({ message: "PDF generation failed" });
   }
 
-  // Send email to finance with PDF attached
+  // Send email to finance with PDF
   try {
     await resend.emails.send({
       from: "Noble Healthcare <info@1noblehealthcare.com>",
       to: ["finance@1noblehealthcare.com"],
-      subject: `Timesheet – ${data.clientName} – ${data.weekEnd}`,
+      subject: `Timesheet – ${data.staffName} – ${data.weekEnd}`,
       html,
       attachments: [
         {
-          filename: `Timesheet_${data.clientName}_${data.weekEnd}.pdf`,
+          filename: `Timesheet_${data.staffName}_${data.weekEnd}.pdf`,
           content: pdfBuf.toString("base64"),
         },
       ],
@@ -142,7 +151,7 @@ export default async function handler(
     return res.status(500).json({ message: "Finance send failed" });
   }
 
-  // Confirmation to user (no attachment)
+  // Confirmation to user only
   if (data.email) {
     try {
       await resend.emails.send({

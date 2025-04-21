@@ -20,13 +20,13 @@ type Row = {
   timeIn: string;
   timeOut: string;
   breakMins: string;
-  notes: string;
+  notes: string; // will hold initials
 };
 
 export default function TimesheetPage() {
   const [form, setForm] = useState<{
-    clientName: string;
-    site: string;
+    staffName: string;
+    shiftLocation: string;
     companyAddress: string;
     contactNumber: string;
     email: string;
@@ -34,8 +34,8 @@ export default function TimesheetPage() {
     weekEnd: string;
     timesheet: Row[];
   }>({
-    clientName: "",
-    site: "",
+    staffName: "",
+    shiftLocation: "",
     companyAddress: "",
     contactNumber: "",
     email: "",
@@ -51,19 +51,16 @@ export default function TimesheetPage() {
     })),
   });
 
-  // signature mode: upload an image or type name
   const [sigMode, setSigMode] = useState<"upload" | "type">("upload");
-  const [signatureData, setSignatureData] = useState<string>(""); // data URL
-  const [typedName, setTypedName] = useState<string>("");         // typed signature
-
-  const [message, setMessage] = useState<string|null>(null);
+  const [signatureData, setSignatureData] = useState<string>("");
+  const [typedName, setTypedName] = useState<string>("");
+  const [message, setMessage] = useState<string | null>(null);
   const [sigError, setSigError] = useState(false);
 
-  // auto‑fill dates & weekEnd when weekStart changes
   useEffect(() => {
     if (!form.weekStart) return;
     const start = new Date(form.weekStart);
-    setForm(f => ({
+    setForm((f) => ({
       ...f,
       weekEnd: format(addDays(start, 6), "yyyy-MM-dd"),
       timesheet: f.timesheet.map((r, i) => ({
@@ -73,49 +70,50 @@ export default function TimesheetPage() {
     }));
   }, [form.weekStart]);
 
-  // compute minutes worked per row
   const computeRowMins = (r: Row) => {
     if (!r.timeIn || !r.timeOut) return 0;
     const [h1, m1] = r.timeIn.split(":").map(Number);
     const [h2, m2] = r.timeOut.split(":").map(Number);
-    const worked = h2*60 + m2 - (h1*60 + m1);
-    return Math.max(worked - (Number(r.breakMins)||0), 0);
+    const worked = h2 * 60 + m2 - (h1 * 60 + m1);
+    return Math.max(worked - (Number(r.breakMins) || 0), 0);
   };
 
-  const totalMins = form.timesheet.reduce((sum,r)=>sum+computeRowMins(r), 0);
-  const totalH = Math.floor(totalMins/60);
-  const totalR = totalMins%60;
+  const totalMins = form.timesheet.reduce((sum, r) => sum + computeRowMins(r), 0);
+  const totalH = Math.floor(totalMins / 60);
+  const totalR = totalMins % 60;
 
-  // handle form and table input
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>, idx?:number) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement>,
+    idx?: number
+  ) {
     const { name, value } = e.target;
     if (typeof idx === "number") {
-      setForm(f => {
+      setForm((f) => {
         const ts = [...f.timesheet];
         ts[idx] = { ...ts[idx], [name]: value };
         return { ...f, timesheet: ts };
       });
     } else {
-      setForm(f => ({ ...f, [name]: value }));
+      setForm((f) => ({ ...f, [name]: value }));
     }
   }
 
-  // read uploaded image as data URL
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     setSigError(false);
     const file = e.target.files?.[0];
-    if (!file) { setSignatureData(""); return; }
+    if (!file) {
+      setSignatureData("");
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = ()=> setSignatureData(reader.result as string);
+    reader.onload = () => setSignatureData(reader.result as string);
     reader.readAsDataURL(file);
   }
 
-  // submit JSON to /api/timesheet
   async function submit() {
-    // require signature
     if (
-      (sigMode==="upload" && !signatureData) ||
-      (sigMode==="type" && !typedName.trim())
+      (sigMode === "upload" && !signatureData) ||
+      (sigMode === "type" && !typedName.trim())
     ) {
       setSigError(true);
       setMessage("Please provide a signature");
@@ -124,11 +122,18 @@ export default function TimesheetPage() {
     setSigError(false);
     setMessage("Sending…");
 
+    const totalHours = `${totalH}h ${totalR}m`;
+
     const payload = {
       ...form,
-      signature: sigMode==="upload"
-        ? signatureData
-        : `Signed: ${typedName.trim()}`,
+      signature:
+        sigMode === "upload"
+          ? signatureData
+          : `Signed: ${typedName.trim()}`,
+      totalHours,
+      staffName: form.staffName,
+      shiftLocation: form.shiftLocation,
+      financeEmail: "finance@1noblehealthcare",
     };
 
     try {
@@ -137,23 +142,32 @@ export default function TimesheetPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const json = await res.json().catch(()=>({}));
-      if (!res.ok) throw new Error(json.message||res.statusText);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.message || res.statusText);
 
       setMessage("Sent successfully");
-      // reset form
       setForm({
-        clientName:"", site:"", companyAddress:"", contactNumber:"",
-        email:"", weekStart:"", weekEnd:"",
-        timesheet: daysOfWeek.map(day=>({
-          day,date:"",timeIn:"",timeOut:"",breakMins:"",notes:""
+        staffName: "",
+        shiftLocation: "",
+        companyAddress: "",
+        contactNumber: "",
+        email: "",
+        weekStart: "",
+        weekEnd: "",
+        timesheet: daysOfWeek.map((day) => ({
+          day,
+          date: "",
+          timeIn: "",
+          timeOut: "",
+          breakMins: "",
+          notes: "",
         })),
       });
       setSignatureData("");
       setTypedName("");
-    } catch(err:any) {
+    } catch (err: any) {
       console.error(err);
-      setMessage("Send failed: "+err.message);
+      setMessage("Send failed: " + err.message);
     }
   }
 
@@ -162,28 +176,37 @@ export default function TimesheetPage() {
       <h1 className="text-2xl font-bold mb-4">Weekly Timesheet</h1>
 
       {message && (
-        <div className={`p-2 mb-4 rounded ${
-          message.includes("success")
-            ? "bg-green-100 text-green-700"
-            : "bg-red-100 text-red-700"
-        }`}>{message}</div>
+        <div
+          className={`p-2 mb-4 rounded ${
+            message.includes("success")
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
+          {message}
+        </div>
       )}
 
-      {/* Client & Week Details */}
+      {/* Details */}
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         <div>
-          <h2 className="font-semibold mb-2">Client Details</h2>
+          <h2 className="font-semibold mb-2">Details</h2>
           {[
-            {name:"clientName", label:"Client Name", type:"text"},
-            {name:"site", label:"Site", type:"text"},
-            {name:"companyAddress", label:"Address", type:"text"},
-            {name:"contactNumber", label:"Contact #", type:"tel"},
-            {name:"email", label:"Email", type:"email"},
-          ].map(({name,label,type})=>(
+            { name: "staffName", label: "Staff Name", type: "text" },
+            { name: "shiftLocation", label: "Shift Location", type: "text" },
+            { name: "companyAddress", label: "Address", type: "text" },
+            { name: "contactNumber", label: "Contact #", type: "tel" },
+            { name: "email", label: "Email", type: "email" },
+          ].map(({ name, label, type }) => (
             <div key={name} className="mb-2">
-              <label htmlFor={name} className="block mb-1">{label}</label>
+              <label htmlFor={name} className="block mb-1">
+                {label}
+              </label>
               <input
-                id={name} name={name} type={type} autoComplete="off"
+                id={name}
+                name={name}
+                type={type}
+                autoComplete="off"
                 value={(form as any)[name]}
                 onChange={handleChange}
                 className="w-full border p-2 rounded"
@@ -192,21 +215,31 @@ export default function TimesheetPage() {
           ))}
         </div>
 
+        {/* Week Details */}
         <div>
           <h2 className="font-semibold mb-2">Week Details</h2>
           <div className="mb-2">
-            <label htmlFor="weekStart" className="block mb-1">Week Start</label>
+            <label htmlFor="weekStart" className="block mb-1">
+              Week Start
+            </label>
             <input
-              id="weekStart" name="weekStart" type="date"
+              id="weekStart"
+              name="weekStart"
+              type="date"
               value={form.weekStart}
               onChange={handleChange}
               className="w-full border p-2 rounded"
             />
           </div>
           <div>
-            <label htmlFor="weekEnd" className="block mb-1">Week End</label>
+            <label htmlFor="weekEnd" className="block mb-1">
+              Week End
+            </label>
             <input
-              id="weekEnd" name="weekEnd" type="date" readOnly
+              id="weekEnd"
+              name="weekEnd"
+              type="date"
+              readOnly
               value={form.weekEnd}
               className="w-full bg-gray-100 border p-2 rounded"
             />
@@ -219,55 +252,78 @@ export default function TimesheetPage() {
         <table className="w-full table-auto border-collapse text-sm">
           <thead>
             <tr>
-              {["Day","Date","In","Out","Break","Total","Notes"].map(h=>(
-                <th key={h} className="border p-2 bg-gray-50">{h}</th>
+              {[
+                "Day",
+                "Date",
+                "In",
+                "Out",
+                "Break",
+                "Total",
+                "Client Initials",
+              ].map((h) => (
+                <th key={h} className="border p-2 bg-gray-50">
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {form.timesheet.map((r,i)=>(
+            {form.timesheet.map((r, i) => (
               <tr key={i}>
                 <td className="border p-2">{r.day}</td>
                 <td className="border p-2">
                   <input
-                    id={`date-${i}`} name="date" type="date"
+                    id={`date-${i}`}
+                    name="date"
+                    type="date"
                     value={r.date}
-                    onChange={e=>handleChange(e,i)}
+                    onChange={(e) => handleChange(e, i)}
                     className="w-full p-1 border rounded"
                   />
                 </td>
                 <td className="border p-2">
                   <input
-                    id={`timeIn-${i}`} name="timeIn" type="time"
+                    id={`timeIn-${i}`}
+                    name="timeIn"
+                    type="time"
                     value={r.timeIn}
-                    onChange={e=>handleChange(e,i)}
+                    onChange={(e) => handleChange(e, i)}
                     className="w-full p-1 border rounded"
                   />
                 </td>
                 <td className="border p-2">
                   <input
-                    id={`timeOut-${i}`} name="timeOut" type="time"
+                    id={`timeOut-${i}`}
+                    name="timeOut"
+                    type="time"
                     value={r.timeOut}
-                    onChange={e=>handleChange(e,i)}
+                    onChange={(e) => handleChange(e, i)}
                     className="w-full p-1 border rounded"
                   />
                 </td>
                 <td className="border p-2">
                   <input
-                    id={`breakMins-${i}`} name="breakMins" type="number" placeholder="mins"
+                    id={`breakMins-${i}`}
+                    name="breakMins"
+                    type="number"
+                    placeholder="mins"
                     value={r.breakMins}
-                    onChange={e=>handleChange(e,i)}
+                    onChange={(e) => handleChange(e, i)}
                     className="w-full p-1 border rounded"
                   />
                 </td>
                 <td className="border p-2 text-center">
-                  {Math.floor(computeRowMins(r)/60)}h {computeRowMins(r)%60}m
+                  {Math.floor(computeRowMins(r) / 60)}h{" "}
+                  {computeRowMins(r) % 60}m
                 </td>
                 <td className="border p-2">
                   <input
-                    id={`notes-${i}`} name="notes" type="text" placeholder="Notes"
+                    id={`notes-${i}`}
+                    name="notes"
+                    type="text"
+                    placeholder="Client Initials"
                     value={r.notes}
-                    onChange={e=>handleChange(e,i)}
+                    onChange={(e) => handleChange(e, i)}
                     className="w-full p-1 border rounded"
                   />
                 </td>
@@ -288,47 +344,75 @@ export default function TimesheetPage() {
         <div className="flex items-center mb-2 space-x-4">
           <label>
             <input
-              type="radio" name="sigMode" value="upload"
-              checked={sigMode==="upload"}
-              onChange={()=>setSigMode("upload")}
+              type="radio"
+              name="sigMode"
+              value="upload"
+              checked={sigMode === "upload"}
+              onChange={() => setSigMode("upload")}
             /> Upload Image
           </label>
           <label>
             <input
-              type="radio" name="sigMode" value="type"
-              checked={sigMode==="type"}
-              onChange={()=>setSigMode("type")}
+              type="radio"
+              name="sigMode"
+              value="type"
+              checked={sigMode === "type"}
+              onChange={() => setSigMode("type")}
             /> Type Name
           </label>
         </div>
 
-        {sigMode==="upload" ? (
+        {sigMode === "upload" ? (
           <>
-            <input type="file" accept="image/*" onChange={handleUpload} className="block mb-2"/>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleUpload}
+              className="block mb-2"
+            />
             {signatureData && (
-              <img src={signatureData} alt="signature" className="mt-2 border rounded max-h-32"/>
+              <img
+                src={signatureData}
+                alt="signature"
+                className="mt-2 border rounded max-h-32"
+              />
             )}
           </>
         ) : (
           <>
             <input
-              id="typedSignature" type="text" placeholder="Type your name"
+              id="typedSignature"
+              type="text"
+              placeholder="Type your name"
               value={typedName}
-              onChange={e=>{setTypedName(e.target.value); setSigError(false)}}
+              onChange={(e) => {
+                setTypedName(e.target.value);
+                setSigError(false);
+              }}
               className="w-full border p-2 rounded mb-2"
             />
-            {typedName && <p className="italic text-lg border-b pb-1">{typedName}</p>}
+            {typedName && (
+              <p className="italic text-lg border-b pb-1">{typedName}</p>
+            )}
           </>
         )}
-        {sigError && <p className="text-red-600 mt-1">Signature is required</p>}
+        {sigError && (
+          <p className="text-red-600 mt-1">Signature is required</p>
+        )}
       </div>
 
       {/* Actions */}
       <div className="flex justify-end space-x-3">
-        <button onClick={()=>window.print()} className="px-5 py-2 bg-[#20bfa0] text-white rounded">
+        <button
+          onClick={() => window.print()}
+          className="px-5 py-2 bg-[#20bfa0] text-white rounded"
+        >
           Print
         </button>
-        <button onClick={submit} className="px-6 py-3 bg-[#20bfa0] text-white rounded">
+        <button
+          onClick={submit}
+          className="px-6 py-3 bg-[#20bfa0] text-white rounded"
+        >
           Submit Timesheet
         </button>
       </div>
