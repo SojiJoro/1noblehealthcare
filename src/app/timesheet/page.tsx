@@ -1,14 +1,14 @@
-// src/app/timesheet/page.tsx
-"use client"
+"use client";
 
-import dynamic from "next/dynamic"
-import React, { useState, useRef, useEffect } from "react"
-import { format, addDays } from "date-fns"
+import React, { useState, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { format, addDays } from "date-fns";
 
-// Load SignaturePad only in the browser
-const SignaturePad = dynamic(() => import("react-signature-canvas"), {
-  ssr: false,
-}) as any
+// Dynamically load the default export of react-signature-canvas
+const SignatureCanvas = dynamic(
+  () => import("react-signature-canvas"),
+  { ssr: false }
+) as any;
 
 const daysOfWeek = [
   "Monday",
@@ -18,27 +18,27 @@ const daysOfWeek = [
   "Friday",
   "Saturday",
   "Sunday",
-]
+];
 
 type Row = {
-  day: string
-  date: string
-  timeIn: string
-  timeOut: string
-  breakMins: string
-  notes: string
-}
+  day: string;
+  date: string;
+  timeIn: string;
+  timeOut: string;
+  breakMins: string;
+  notes: string;
+};
 
 export default function TimesheetPage() {
   const [form, setForm] = useState<{
-    clientName: string
-    site: string
-    companyAddress: string
-    contactNumber: string
-    email: string
-    weekStart: string
-    weekEnd: string
-    timesheet: Row[]
+    clientName: string;
+    site: string;
+    companyAddress: string;
+    contactNumber: string;
+    email: string;
+    weekStart: string;
+    weekEnd: string;
+    timesheet: Row[];
   }>({
     clientName: "",
     site: "",
@@ -55,17 +55,17 @@ export default function TimesheetPage() {
       breakMins: "",
       notes: "",
     })),
-  })
+  });
 
-  const [message, setMessage] = useState<string | null>(null)
-  const sigPadRef = useRef<any>(null)
-  const [sigError, setSigError] = useState(false)
-  const [isSigned, setIsSigned] = useState(false)
+  const [message, setMessage] = useState<string | null>(null);
+  const sigPadRef = useRef<any>(null);
+  const [sigError, setSigError] = useState(false);
+  const [isSigned, setIsSigned] = useState(false);
 
-  // Auto‑fill dates & weekEnd
+  // Auto-fill dates & weekEnd when weekStart changes
   useEffect(() => {
-    if (!form.weekStart) return
-    const start = new Date(form.weekStart)
+    if (!form.weekStart) return;
+    const start = new Date(form.weekStart);
     setForm((f) => ({
       ...f,
       weekEnd: format(addDays(start, 6), "yyyy-MM-dd"),
@@ -73,91 +73,70 @@ export default function TimesheetPage() {
         ...r,
         date: format(addDays(start, i), "yyyy-MM-dd"),
       })),
-    }))
-  }, [form.weekStart])
+    }));
+  }, [form.weekStart]);
 
-  // Calculate minutes per row
   const computeRowMins = (r: Row) => {
-    if (!r.timeIn || !r.timeOut) return 0
-    const [h1, m1] = r.timeIn.split(":").map(Number)
-    const [h2, m2] = r.timeOut.split(":").map(Number)
-    const worked = h2 * 60 + m2 - (h1 * 60 + m1)
-    const brk = Number(r.breakMins) || 0
-    return Math.max(worked - brk, 0)
-  }
+    if (!r.timeIn || !r.timeOut) return 0;
+    const [h1, m1] = r.timeIn.split(":").map(Number);
+    const [h2, m2] = r.timeOut.split(":").map(Number);
+    const worked = h2 * 60 + m2 - (h1 * 60 + m1);
+    return Math.max(worked - (Number(r.breakMins) || 0), 0);
+  };
 
-  // Grand totals
-  const totalMins = form.timesheet.reduce(
-    (sum, r) => sum + computeRowMins(r),
-    0
-  )
-  const totalH = Math.floor(totalMins / 60)
-  const totalR = totalMins % 60
+  const totalMins = form.timesheet.reduce((sum, r) => sum + computeRowMins(r), 0);
+  const totalH = Math.floor(totalMins / 60);
+  const totalR = totalMins % 60;
 
-  // Handle input change
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement>,
     idx?: number
   ) {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     if (typeof idx === "number") {
       setForm((f) => {
-        const ts = [...f.timesheet]
-        ts[idx] = { ...ts[idx], [name]: value }
-        return { ...f, timesheet: ts }
-      })
+        const ts = [...f.timesheet];
+        ts[idx] = { ...ts[idx], [name]: value };
+        return { ...f, timesheet: ts };
+      });
     } else {
-      setForm((f) => ({ ...f, [name]: value }))
+      setForm((f) => ({ ...f, [name]: value }));
     }
   }
 
-  // Clear signature
   function clearSig() {
-    sigPadRef.current?.clear()
-    setSigError(false)
-    setIsSigned(false)
+    sigPadRef.current?.clear();
+    setSigError(false);
+    setIsSigned(false);
   }
 
-  // Submit handler
   async function submit() {
-    if (!isSigned || sigPadRef.current?.isEmpty()) {
-      setSigError(true)
-      setMessage("Please sign before sending")
-      return
+    // Validate signature
+    if (!sigPadRef.current || sigPadRef.current.isEmpty()) {
+      setSigError(true);
+      setMessage("Please sign before sending");
+      return;
     }
-    setSigError(false)
-    setMessage("Sending…")
+    setSigError(false);
+    setMessage("Sending…");
 
-    if (
-      !sigPadRef.current ||
-      typeof sigPadRef.current.getTrimmedCanvas !== "function"
-    ) {
-      setMessage("Signature pad not ready")
-      return
-    }
-
-    const canvas = sigPadRef.current.getTrimmedCanvas()
-    if (!canvas) {
-      setMessage("Unexpected signature error")
-      return
-    }
-
+    // Now get the trimmed canvas — this will always work because sigPadRef.current is the real component
+    const canvas = sigPadRef.current.getTrimmedCanvas();
     const payload = {
       ...form,
       signature: canvas.toDataURL("image/png"),
-    }
+    };
 
     try {
       const res = await fetch("/api/timesheet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || res.statusText);
 
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data.message || res.statusText)
-
-      setMessage("Sent successfully")
+      setMessage("Sent successfully");
       // Reset form
       setForm({
         clientName: "",
@@ -175,10 +154,11 @@ export default function TimesheetPage() {
           breakMins: "",
           notes: "",
         })),
-      })
-      clearSig()
+      });
+      clearSig();
     } catch (err: any) {
-      setMessage("Send failed: " + err.message)
+      console.error("Submit error:", err);
+      setMessage("Send failed: " + err.message);
     }
   }
 
@@ -257,7 +237,7 @@ export default function TimesheetPage() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Timesheet Table */}
       <div className="overflow-x-auto mb-6">
         <table className="w-full table-auto border-collapse text-sm">
           <thead>
@@ -327,7 +307,7 @@ export default function TimesheetPage() {
                     type="text"
                     placeholder="Notes"
                     value={r.notes}
-                    onChange={(e) => handleChange(e, i)}  
+                    onChange={(e) => handleChange(e, i)}
                     className="w-full p-1 border rounded"
                   />
                 </td>
@@ -344,14 +324,10 @@ export default function TimesheetPage() {
 
       {/* Signature */}
       <div className="mb-6">
-        <label htmlFor="sigpad" className="block mb-2">
-          Signature
-        </label>
-        <SignaturePad
-          ref={(c: any) => {
-            sigPadRef.current = c
-          }}
-          canvasProps={{ id: "sigpad", className: "w-full h-36 border rounded" }}
+        <label className="block mb-2">Signature</label>
+        <SignatureCanvas
+          ref={sigPadRef}
+          canvasProps={{ className: "w-full h-36 border rounded" }}
           onEnd={() => setIsSigned(true)}
         />
         {sigError && <p className="text-red-600 mt-1">Signature required</p>}
@@ -364,7 +340,7 @@ export default function TimesheetPage() {
         </button>
       </div>
 
-      {/* Actions */}  
+      {/* Actions */}
       <div className="flex justify-end space-x-3">
         <button
           onClick={() => window.print()}
@@ -381,5 +357,5 @@ export default function TimesheetPage() {
         </button>
       </div>
     </div>
-  )
+  );
 }
