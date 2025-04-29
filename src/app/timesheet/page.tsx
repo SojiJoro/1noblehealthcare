@@ -1,4 +1,3 @@
-// src/app/timesheet/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -20,7 +19,7 @@ type Row = {
   timeIn: string;
   timeOut: string;
   breakMins: string;
-  notes: string; // will hold initials
+  notes: string;
 };
 
 export default function TimesheetPage() {
@@ -57,6 +56,7 @@ export default function TimesheetPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [sigError, setSigError] = useState(false);
 
+  // Update weekEnd & dates whenever weekStart changes
   useEffect(() => {
     if (!form.weekStart) return;
     const start = new Date(form.weekStart);
@@ -70,14 +70,19 @@ export default function TimesheetPage() {
     }));
   }, [form.weekStart]);
 
+  // Compute minutes worked per row, handling overnight
   const computeRowMins = (r: Row) => {
     if (!r.timeIn || !r.timeOut) return 0;
     const [h1, m1] = r.timeIn.split(":").map(Number);
     const [h2, m2] = r.timeOut.split(":").map(Number);
-    const worked = h2 * 60 + m2 - (h1 * 60 + m1);
-    return Math.max(worked - (Number(r.breakMins) || 0), 0);
+    let start = h1 * 60 + m1;
+    let end = h2 * 60 + m2;
+    if (end < start) end += 24 * 60; // overnight
+    const worked = end - start - (Number(r.breakMins) || 0);
+    return Math.max(worked, 0);
   };
 
+  // Totals for display
   const totalMins = form.timesheet.reduce((sum, r) => sum + computeRowMins(r), 0);
   const totalH = Math.floor(totalMins / 60);
   const totalR = totalMins % 60;
@@ -119,6 +124,7 @@ export default function TimesheetPage() {
       setMessage("Please provide a signature");
       return;
     }
+
     setSigError(false);
     setMessage("Sending…");
 
@@ -131,9 +137,6 @@ export default function TimesheetPage() {
           ? signatureData
           : `Signed: ${typedName.trim()}`,
       totalHours,
-      staffName: form.staffName,
-      shiftLocation: form.shiftLocation,
-      financeEmail: "finance@1noblehealthcare",
     };
 
     try {
@@ -146,6 +149,7 @@ export default function TimesheetPage() {
       if (!res.ok) throw new Error(json.message || res.statusText);
 
       setMessage("Sent successfully");
+      // reset form
       setForm({
         staffName: "",
         shiftLocation: "",
@@ -175,19 +179,7 @@ export default function TimesheetPage() {
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Weekly Timesheet</h1>
 
-      {message && (
-        <div
-          className={`p-2 mb-4 rounded ${
-            message.includes("success")
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
-        >
-          {message}
-        </div>
-      )}
-
-      {/* Details */}
+      {/* Details Section */}
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         <div>
           <h2 className="font-semibold mb-2">Details</h2>
@@ -215,7 +207,6 @@ export default function TimesheetPage() {
           ))}
         </div>
 
-        {/* Week Details */}
         <div>
           <h2 className="font-semibold mb-2">Week Details</h2>
           <div className="mb-2">
@@ -252,19 +243,13 @@ export default function TimesheetPage() {
         <table className="w-full table-auto border-collapse text-sm">
           <thead>
             <tr>
-              {[
-                "Day",
-                "Date",
-                "In",
-                "Out",
-                "Break",
-                "Total",
-                "Client Initials",
-              ].map((h) => (
-                <th key={h} className="border p-2 bg-gray-50">
-                  {h}
-                </th>
-              ))}
+              {["Day", "Date", "In", "Out", "Break", "Total", "Client Initials"].map(
+                (h) => (
+                  <th key={h} className="border p-2 bg-gray-50">
+                    {h}
+                  </th>
+                )
+              )}
             </tr>
           </thead>
           <tbody>
@@ -273,7 +258,6 @@ export default function TimesheetPage() {
                 <td className="border p-2">{r.day}</td>
                 <td className="border p-2">
                   <input
-                    id={`date-${i}`}
                     name="date"
                     type="date"
                     value={r.date}
@@ -283,7 +267,6 @@ export default function TimesheetPage() {
                 </td>
                 <td className="border p-2">
                   <input
-                    id={`timeIn-${i}`}
                     name="timeIn"
                     type="time"
                     value={r.timeIn}
@@ -293,7 +276,6 @@ export default function TimesheetPage() {
                 </td>
                 <td className="border p-2">
                   <input
-                    id={`timeOut-${i}`}
                     name="timeOut"
                     type="time"
                     value={r.timeOut}
@@ -303,7 +285,6 @@ export default function TimesheetPage() {
                 </td>
                 <td className="border p-2">
                   <input
-                    id={`breakMins-${i}`}
                     name="breakMins"
                     type="number"
                     placeholder="mins"
@@ -313,12 +294,10 @@ export default function TimesheetPage() {
                   />
                 </td>
                 <td className="border p-2 text-center">
-                  {Math.floor(computeRowMins(r) / 60)}h{" "}
-                  {computeRowMins(r) % 60}m
+                  {Math.floor(computeRowMins(r) / 60)}h {computeRowMins(r) % 60}m
                 </td>
                 <td className="border p-2">
                   <input
-                    id={`notes-${i}`}
                     name="notes"
                     type="text"
                     placeholder="Client Initials"
@@ -333,12 +312,12 @@ export default function TimesheetPage() {
         </table>
       </div>
 
-      {/* Totals */}
+      {/* Totals Display */}
       <div className="text-right font-semibold mb-6">
         Total {totalH}h {totalR}m
       </div>
 
-      {/* Signature */}
+      {/* Signature Section */}
       <div className="mb-6">
         <h2 className="font-semibold mb-2">Signature</h2>
         <div className="flex items-center mb-2 space-x-4">
@@ -349,7 +328,8 @@ export default function TimesheetPage() {
               value="upload"
               checked={sigMode === "upload"}
               onChange={() => setSigMode("upload")}
-            /> Upload Image
+            />{" "}
+            Upload Image
           </label>
           <label>
             <input
@@ -358,10 +338,10 @@ export default function TimesheetPage() {
               value="type"
               checked={sigMode === "type"}
               onChange={() => setSigMode("type")}
-            /> Type Name
+            />{" "}
+            Type Name
           </label>
         </div>
-
         {sigMode === "upload" ? (
           <>
             <input
@@ -381,7 +361,6 @@ export default function TimesheetPage() {
         ) : (
           <>
             <input
-              id="typedSignature"
               type="text"
               placeholder="Type your name"
               value={typedName}
@@ -396,25 +375,36 @@ export default function TimesheetPage() {
             )}
           </>
         )}
-        {sigError && (
-          <p className="text-red-600 mt-1">Signature is required</p>
-        )}
+        {sigError && <p className="text-red-600 mt-1">Signature is required</p>}
       </div>
 
-      {/* Actions */}
-      <div className="flex justify-end space-x-3">
-        <button
-          onClick={() => window.print()}
-          className="px-5 py-2 bg-[#20bfa0] text-white rounded"
-        >
-          Print
-        </button>
-        <button
-          onClick={submit}
-          className="px-6 py-3 bg-[#20bfa0] text-white rounded"
-        >
-          Submit Timesheet
-        </button>
+      {/* Actions + Message */}
+      <div className="flex flex-col items-end space-y-2">
+        <div className="flex space-x-3">
+          <button
+            onClick={() => window.print()}
+            className="px-5 py-2 bg-[#20bfa0] text-white rounded"
+          >
+            Print
+          </button>
+          <button
+            onClick={submit}
+            className="px-6 py-3 bg-[#20bfa0] text-white rounded"
+          >
+            Submit Timesheet
+          </button>
+        </div>
+        {message && (
+          <div
+            className={`p-2 text-sm rounded w-full max-w-sm text-center ${
+              message.includes("success")
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            {message}
+          </div>
+        )}
       </div>
     </div>
   );
